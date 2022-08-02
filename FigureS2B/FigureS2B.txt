@@ -1,0 +1,6 @@
+Sample	ESCC_nonmalignant_1	ESCC_nonmalignant_2	ESCC_nonmalignant_3	ESCC_nonmalignant_53F	ESCC_nonmalignant_54M
+ESCC_nonmalignant_1	1	0.7956	0.7844	0.7768	0.7993
+ESCC_nonmalignant_2	0.7956	1	0.79	0.781	0.795
+ESCC_nonmalignant_3	0.7844	0.79	1	0.7828	0.804
+ESCC_nonmalignant_53F	0.7768	0.781	0.7828	1	0.8117
+ESCC_nonmalignant_54M	0.7993	0.795	0.804	0.8117	1
