@@ -1,0 +1,4 @@
+Type	Length
+EAC_commonPMDs	1375580016
+ESCC_commonPMDs	1032635701
+union_PMDs	1430620388
