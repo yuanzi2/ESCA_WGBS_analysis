@@ -1,0 +1,11 @@
+Type	Sample	Ratio	Group	SampleGroup
+exon	tshypoEAC.Back.Nicole	0.0525862068965517	tshypoEAC	Nicole_NC
+Intergenic	tshypoEAC.Back.Nicole	0.342748478701826	tshypoEAC	Nicole_NC
+intron	tshypoEAC.Back.Nicole	0.581237322515213	tshypoEAC	Nicole_NC
+non-coding	tshypoEAC.Back.Nicole	0.0071501014198783	tshypoEAC	Nicole_NC
+promoter-TSS	tshypoEAC.Back.Nicole	0.0162778904665314	tshypoEAC	Nicole_NC
+exon	tshypoESCC.Back.Nicole	0.0587155963302752	tshypoESCC	Nicole_NC
+Intergenic	tshypoESCC.Back.Nicole	0.331192660550459	tshypoESCC	Nicole_NC
+intron	tshypoESCC.Back.Nicole	0.582568807339449	tshypoESCC	Nicole_NC
+non-coding	tshypoESCC.Back.Nicole	0.00795107033639144	tshypoESCC	Nicole_NC
+promoter-TSS	tshypoESCC.Back.Nicole	0.0195718654434251	tshypoESCC	Nicole_NC
