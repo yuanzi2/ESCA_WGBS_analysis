@@ -1,0 +1,7 @@
+Type1	Type2	pvalue
+sharedPMDs	EAC_specificPMDs	6.66237692410951e-64
+sharedPMDs	ESCC_specificPMDs	0.000187053086603505
+sharedPMDs	sharedHMDs	0
+EAC_specificPMDs	ESCC_specificPMDs	0.0000000232901098595887
+EAC_specificPMDs	sharedHMDs	2.58723281276988e-228
+ESCC_specificPMDs	sharedHMDs	5.62397035087206e-84
