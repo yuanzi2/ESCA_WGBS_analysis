@@ -1,0 +1,5 @@
+"type" "compartment" "rate"
+"1" "EAC_tumor_PMDs" "EAC_tumor_compB" 0.618388122231382
+"2" "EAC_tumor_PMDs" "ESCC_tumor_compB" 0.327476470230989
+"3" "ESCC_tumor_PMDs" "EAC_tumor_compB" 0.30860555355025
+"4" "ESCC_tumor_PMDs" "ESCC_tumor_compB" 0.715285798999639
