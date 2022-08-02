@@ -1,0 +1,3 @@
+"type" "compartment" "rate"
+"1" "SharedPMDs" "EAC_tumor_compB" 0.584648335576535
+"2" "SharedPMDs" "ESCC_tumor_compB" 0.59490353072232
