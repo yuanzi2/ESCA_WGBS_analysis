@@ -2,4 +2,4 @@
 
 ##all figures were plotted by run.R.
 
-##meta and data files were upload into Zenodo.
+##meta and methylation bed file were upload into Zenodo (https://zenodo.org/deposit/6954946).
