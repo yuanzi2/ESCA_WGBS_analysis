@@ -20,7 +20,8 @@ library(dplyr)
 library(formattable)
 library(stringr)
 library(reshape2)
-
+library(BSgenome)
+library(MutationalPatterns)
 ################################################meta_info################################################
 EAC_Tumor_sampleList=c(paste0("EAC_", c(1:4,6)), paste0("GEJ_", 1:7))
 ESCC_Tumor_sampleList=paste0("ESCC_", c(1:17,19:22))
@@ -225,7 +226,7 @@ plotDotPlot=function(myPlotData, saveFile){
 plotDotPlot(plotdata, "Figure1B/methylation_sixType.pdf")
 
 
-################################################FigureS1A-D################################################
+################################################FigureS2A-D################################################
 chr.sel="chr16"
 library(MMSeekR.data)
 library(MMSeekR)
@@ -233,12 +234,12 @@ data("NNscore.hg19")
 data("hg19.seqLengths")
 data("hg19.blackList")
 
-####FigureS1BC
-methFile <-"Data/FigureS1A-D//BP_venous_blood_S01FJZA1_NA_MantleCellLymphoma.methyCov.tab"
+####FigureS2BC
+methFile <-"Data/FigureS2A-D//BP_venous_blood_S01FJZA1_NA_MantleCellLymphoma.methyCov.tab"
 meth <- readMethylomeNew(fileName=methFile, NNdat=NNscore.hg19, seqLengths=hg19.seqLengths)
 indx <- as.character(seqnames(meth))==chr.sel
 meth=meth[indx]
-hmm.modelList=trainPMDHMDNew(meth, "chr16", 201, 1, "FigureS1BC/FigureS1BC.pdf")
+hmm.modelList=trainPMDHMDNew(meth, "chr16", 201, 1, "FigureS2BC/FigureS2BC.pdf")
 y.list=PMDviterbiSegNew(meth, hmm.modelList, 201, 1)
 seg = createGRangesObjectPMDSegNew(meth, y.list, 1, hg19.seqLengths)
 seg = tibble(chrom = as.character(seqnames(seg)), start = as.integer(start(seg)), 
@@ -248,7 +249,7 @@ seg=as.data.frame(seg)
 targetSeg=seg[c(100,103),]
 targetSeg=tibble(chrom=as.character(targetSeg$seqnames), start=targetSeg$start, end=targetSeg$end, type=targetSeg$type)
 
-####FigureS1D
+####FigureS2D
 library(zoocat)
 chr.sel="chr16"
 nCGbin=201
@@ -267,19 +268,19 @@ methTemp2$MValue=log2((methTemp2$methylationMean+0.01)/(1-methTemp2$methylationM
 corResult=as.vector(rollcor(NNScore, methylation, width = nCGbin,show = F, use="na.or.complete"))
 corResult=c(rep(corResult[1],(nCGbin-1)/2), corResult, rep(corResult[length(corResult)],(nCGbin-1)/2))
 methTemp2$cor=corResult
-save(methTemp2, file="Data/FigureS1A-D/BP_venous_blood_S01FJZA1_NA_MantleCellLymphoma.methySeekR2.RData")
+save(methTemp2, file="Data/FigureS2A-D/BP_venous_blood_S01FJZA1_NA_MantleCellLymphoma.methySeekR2.RData")
 
-load("Data/FigureS1A-D/BP_venous_blood_S01FJZA1_NA_MantleCellLymphoma.methySeekR2.RData")
-write.table(methTemp2, "Data/FigureS1D/FigureS1D.txt", row.names = F, col.names = TRUE, sep = "\t", quote=F)
+load("Data/FigureS2A-D/BP_venous_blood_S01FJZA1_NA_MantleCellLymphoma.methySeekR2.RData")
+write.table(methTemp2, "Data/FigureS2A-D/FigureS2D.txt", row.names = F, col.names = TRUE, sep = "\t", quote=F)
 p1=ggplot(methTemp2, aes(x=alphaScore, y=cor)) +theme_classic()+xlab("alpha score")+geom_point(color="darkblue", alpha=0.1, size=0.5)+ylab("PCC")+ggtitle("All CpG sites")
 p1=p1 + stat_density_2d(aes(fill = ..level..), geom = "polygon") +gradient_fill("YlOrRd")
 p1=p1+xlim(0,1.5)+ylim(-1,0.3)+theme(plot.title = element_text(hjust=0.5))
-png("FigureS1D/FigureS1D.png", res=300, width=1300, height = 1000)
+png("FigureS2D/FigureS2D.png", res=300, width=1300, height = 1000)
 print(p1)
 dev.off()
 
-####FigureS1A
-load("Data/FigureS1A-D/BP_venous_blood_S01FJZA1_NA_MantleCellLymphoma.methySeekR2.RData")
+####FigureS2A
+load("Data/FigureS2A-D/BP_venous_blood_S01FJZA1_NA_MantleCellLymphoma.methySeekR2.RData")
 methTemp3=tibble(chrom=as.character(methTemp2$seqnames), start=as.integer(methTemp2$start), end=as.integer(methTemp2$end), 
                  Methylation=methTemp2$Methylation, NNscore=methTemp2$NNscore, cor=methTemp2$cor)
 my_theme=theme_classic()+theme(axis.text = element_text(size=12), axis.title = element_text(size=14), plot.title = element_text(size=14, face="bold", hjust = 0.5))
@@ -291,7 +292,7 @@ seed=5500
 plotdata=methTemp3PMDs[(seed-100):(seed+100),]
 region=paste0("PMD region (", plotdata[1,]$chrom, ":",plotdata[1,]$start, "-", plotdata[nrow(plotdata),]$end, ")")
 print(paste0(plotdata[1,]$chrom, ":",plotdata[1,]$start, "-", plotdata[nrow(plotdata),]$end))
-write.table(plotdata, file="FigureS1A/FigureS1A_PMD.txt", row.names = F, col.names = T, quote=F, sep="\t")
+write.table(plotdata, file="FigureS2A/FigureS2A_PMD.txt", row.names = F, col.names = T, quote=F, sep="\t")
 p1=ggplot(plotdata, aes(x=Methylation, y=NNscore)) + geom_point(size=2)+geom_smooth(method=lm)
 p1=p1+xlab("CpG methylation")+ylab("CpG NNscore")+ggtitle(region)
 p1=p1+annotate(geom="text", x=0.75, y=0.75, label=paste0("PCC = ", round(cor(plotdata$Methylation, plotdata$NNscore), 3)), color="red", size=6)
@@ -304,13 +305,13 @@ seed=1500
 plotdata=methTemp3HMDs[(seed-100):(seed+100),]
 region=paste0("HMD region (", plotdata[1,]$chrom, ":",plotdata[1,]$start, "-", plotdata[nrow(plotdata),]$end, ")")
 print(paste0(plotdata[1,]$chrom, ":",plotdata[1,]$start, "-", plotdata[nrow(plotdata),]$end))
-write.table(plotdata, file="FigureS1A/FigureS1A_HMD.txt", row.names = F, col.names = T, quote=F, sep="\t")
+write.table(plotdata, file="FigureS2A/FigureS2A_HMD.txt", row.names = F, col.names = T, quote=F, sep="\t")
 p2=ggplot(plotdata, aes(x=Methylation, y=NNscore)) + geom_point(size=2)+geom_smooth(method=lm)
 p2=p2+xlab("CpG methylation")+ylab("CpG NNscore")+ggtitle(region)
 p2=p2+annotate(geom="text", x=0.75, y=0.75, label=paste0("PCC = ", round(cor(plotdata$Methylation, plotdata$NNscore), 3)), color="red", size=6)
 p2=p2+my_theme
 
-pdf("FigureS1A/FigureS1A.pdf", width=9, height=4)
+pdf("FigureS2A/FigureS2A.pdf", width=9, height=4)
 print(ggarrange(p1, p2, nrow=1))
 dev.off()
 
@@ -318,16 +319,17 @@ dev.off()
 ESCA_MethPipeList=dir("Data/MethPipe_PMDs/ESCA/", pattern=".bed", full.names = T)
 ESCA_MethylSeekRList=dir("Data/MethylSeekR_PMDs/ESCA/", pattern=".bed", full.names = T)
 ESCA_MMSeekRList=dir("Data/MMSeekR_PMDs/PMDs/", pattern=".bed", full.names = T)
-BPTumor_MethPipeList=dir("Data/MMSeekR_PMDs/BLUEPRINT_Tumor/", pattern=".bed", full.names = T)
+BPTumor_MethPipeList=dir("Data/MethPipe_PMDs/BLUEPRINT_Tumor/", pattern=".bed", full.names = T)
 BPTumor_MethylSeekRList=dir("Data/MethylSeekR_PMDs/BLUEPRINT_Tumor/", pattern=".bed", full.names = T)
 BPTumor_MMSeekRPathList=dir("Data/MMSeekR_PMDs/BLUEPRINT_Tumor/", pattern=".bed", full.names = T)
 
 commonPMD=read_bed("meta/commonPMDs_hg38.bed")
 commonHMD=read_bed("meta/commonHMDs_hg38.bed")
 
-getRatio=function(fileList, software){
-  result=as.data.frame(matrix(numeric(0),ncol=3))
+getRatio.v2=function(fileList, software){
+  result=as.data.frame(matrix(numeric(0),ncol=4))
   for(file in fileList){
+    comomPMD_size=sum(commonPMD$end-commonPMD$start)
     fileIndex=gsub("\\..*", "", basename(file))
     fileIndex=gsub("_PMDs", "",fileIndex)
     tmpData=read_bed(file)
@@ -335,31 +337,92 @@ getRatio=function(fileList, software){
     size=sum(tmpData$length)
     tmpPMDData=bed_intersect(tmpData, commonPMD)
     overlapPMDSize=sum(tmpPMDData$.overlap)
-    tmpHMDData=bed_intersect(tmpData, commonHMD)
-    overlapHMDSize=sum(tmpHMDData$.overlap)
-    tmpResult=data.frame(sample=fileIndex, PMD_ratio=overlapPMDSize/size, HMD_ratio=overlapHMDSize/size)
+    tmpResult=data.frame(sample=fileIndex, precision=overlapPMDSize/size, recall=overlapPMDSize/comomPMD_size)
+    tmpResult$F1=2*tmpResult$recall*tmpResult$precision/(tmpResult$recall+tmpResult$precision)
     result=rbind(result, tmpResult)
   }
-  colnames(result)=c("sample", paste0(software, "_in_commonPMD"), paste0(software, "_in_commonHMD"))
+  colnames(result)=c("sample", paste0(software, "_precision"), paste0(software, "_recall"), paste0(software, "_F1"))
   return(result)
 }
-ESCA_MethPipeResult=getRatio(ESCA_MethPipeList, "MethPipe")
-ESCA_MethylSeekResult=getRatio(ESCA_MethylSeekRList, "MethylSeekR")
-ESCA_MMSeekResult=getRatio(ESCA_MMSeekRList, "MMSeekR")
+ESCA_MethPipeResult=getRatio.v2(ESCA_MethPipeList, "MethPipe")
+ESCA_MethylSeekResult=getRatio.v2(ESCA_MethylSeekRList, "MethylSeekR")
+ESCA_MMSeekResult=getRatio.v2(ESCA_MMSeekRList, "MMSeekR")
 ESCA_result=merge(ESCA_MethPipeResult, ESCA_MethylSeekResult, by.x="sample", by.y="sample")
 ESCA_result=merge(ESCA_result, ESCA_MMSeekResult, by.x="sample", by.y="sample")
 ESCA_result=merge(annotation_col, ESCA_result, by.x="Sample", by.y="sample")
-write.table(ESCA_result, file="TableS2/TableS2_ESCA.txt", row.names = F, col.names = T, sep="\t", quote=F)
+write.table(ESCA_result, file="TableS2/TableS2_ESCA.precision_recll.txt", row.names = F, col.names = T, sep="\t", quote=F)
 
-BPTumor_MethPipeResult=getRatio(BPTumor_MethPipeList, "MethPipe")
-BPTumor_MethylSeekResult=getRatio(BPTumor_MethylSeekRList, "MethylSeekR")
-BPTumor_MMSeekResult=getRatio(BPTumor_MMSeekRPathList, "MMSeekR")
+BPTumor_MethPipeResult=getRatio.v2(BPTumor_MethPipeList, "MethPipe")
+BPTumor_MethylSeekResult=getRatio.v2(BPTumor_MethylSeekRList, "MethylSeekR")
+BPTumor_MMSeekResult=getRatio.v2(BPTumor_MMSeekRPathList, "MMSeekR")
 BPTumor_result=merge(BPTumor_MethPipeResult, BPTumor_MethylSeekResult, by.x="sample", by.y="sample")
 BPTumor_result=merge(BPTumor_result, BPTumor_MMSeekResult, by.x="sample", by.y="sample")
-write.table(BPTumor_result, file="TableS2/TableS2_BLUEPRINT_Tumor.txt", row.names = F, col.names = T, sep="\t", quote=F)
+write.table(BPTumor_result, file="TableS2/TableS2_BLUEPRINT_Tumor.precision_recll.txt", row.names = F, col.names = T, sep="\t", quote=F)
 
+####Method comparison for ESCA sample
+ESCA_result=read.table("TableS2/TableS2_ESCA.precision_recll.txt", header=T, sep="\t")
+ESCA_result$Type=factor(ESCA_result$Type, levels=c("ESCC_Nonmalignant", "GEJ_Nonmalignant", "ESCC_Tumor", "EAC/GEJ_Tumor"))
 
-################################################Figure1D and FigureS1E-G################################################
+plotBeeswarm=function(myPlotdata, name, saveFile){
+  colnames(myPlotdata)=c("Sample", "Type", "MethPipe", "MethylSeekR", "MMSeekR")
+  myPlotdata=melt(myPlotdata, id.vars = c("Sample", "Type"))
+  colnames(myPlotdata)[3:4]=c("Method", "Ratio")
+  myPlotdata$Method=factor(myPlotdata$Method, levels=c("MethylSeekR", "MethPipe", "MMSeekR"))
+  statistic_data=myPlotdata%>%group_by(Type, Method)%>%summarise(sd= sd(Ratio), Ratio= mean(Ratio))
+  statistic_data$Method=factor(statistic_data$Method, levels=c("MethylSeekR", "MethPipe", "MMSeekR"))
+  
+  p=ggplot(myPlotdata, aes(x = Method, y = Ratio, color = Method)) +
+    geom_beeswarm(cex = 0.5, alpha=0.4, size=1.5)+facet_grid(. ~ Type, scales = "free")+theme_classic()+xlab("")+
+    scale_color_manual(values=c("blue", "#C900B8", "red"))+
+    geom_errorbar(aes(ymin = Ratio-sd, ymax = Ratio+sd), width=0.2, data = statistic_data, color="black")
+  
+  p=p+stat_summary(fun = mean, fun.min = mean, fun.max = mean,
+                   geom = "crossbar", width = 0.3, color="black", linewidth=0.3)
+  p=p+theme(axis.text.y= element_text(size=8, color="black"), 
+            axis.line = element_line(linewidth=0.2),
+            axis.ticks = element_line(linewidth = 0.2),
+            axis.text.x= element_blank())+xlab("")+ylab(name)
+  
+  pdf(saveFile, width=4.5, height=1.8)
+  print(p)
+  dev.off()
+  write.table(myPlotdata, gsub(".pdf", ".txt", saveFile), row.names = F, col.names = T, sep="\t", quote=F)
+}
+plotdata1=ESCA_result[,c(1:2,5,8,11)]
+plotBeeswarm(plotdata1, "F1","FigureS2FJ/ESCA.F1.beesswarm.pdf")
+
+plotdata1=ESCA_result[,c(1:2,4,7,10)]
+plotBeeswarm(plotdata1, "Recall","FigureS2FJ/ESCA.Recall.beesswarm.pdf")
+
+plotdata1=ESCA_result[,c(1:2,3,6,9)]
+plotBeeswarm(plotdata1, "Precision","FigureS2FJ/ESCA.Precision.beesswarm.pdf")
+
+#####Method comparison for BP blood tumor samples
+bluePrintSamples=read.table("Data/Figure1D_FigureS2EFG/BLUEPRINT_blood_sampleInfo.txt", sep="\t", header=T, stringsAsFactors = F)
+bluePrintSamples=bluePrintSamples[order(bluePrintSamples$Type),]
+bluePrintSamples_tumor=bluePrintSamples[!bluePrintSamples$Type%in%c("Myeloid","Lymphoid","Others"),]
+bluePrintSamples_tumor=bluePrintSamples_tumor[order(bluePrintSamples_tumor$Type),]
+bluePrintSamples_tumor$Type=factor(bluePrintSamples_tumor$Type, levels=unique(bluePrintSamples_tumor$Type))
+bluePrintSamples_tumor$Subtype=factor(bluePrintSamples_tumor$Subtype, levels=c("AcuteLymphocyticLeukemia", "TcellProlymphocyticLeukemia",
+                                                                               "ChronicLymphocyticLeukemia", "MantleCellLymphoma", "MultipleMyeloma", "AcuteMyeloidLeukemia"))
+colnames(bluePrintSamples_tumor)[ncol(bluePrintSamples_tumor)]="PMD_methylation"
+BLUEPRINT_Tumor_result=read.table("TableS2/TableS2_BLUEPRINT_Tumor.precision_recll.txt", header=T, sep="\t")
+BLUEPRINT_Tumor_result=merge(bluePrintSamples_tumor[,c("Sample", "Subtype")], BLUEPRINT_Tumor_result, by.x="Sample", by.y="sample")
+colnames(BLUEPRINT_Tumor_result)[2]=c("Type")
+BLUEPRINT_Tumor_result$Type=factor(BLUEPRINT_Tumor_result$Type, levels=c("AcuteLymphocyticLeukemia",
+                                                                         "ChronicLymphocyticLeukemia", "MultipleMyeloma", "TcellProlymphocyticLeukemia",
+                                                                         "MantleCellLymphoma", "AcuteMyeloidLeukemia"))
+
+plotdata1=BLUEPRINT_Tumor_result[,c(1:2,5,8,11)]
+plotBeeswarm(plotdata1, "F1","FigureS2FJ/BPTumor.F1.beesswarm.pdf")
+
+plotdata1=BLUEPRINT_Tumor_result[,c(1:2,4,7,10)]
+plotBeeswarm(plotdata1, "Recall","FigureS2FJ/BPTumor.Recall.beesswarm.pdf")
+
+plotdata1=BLUEPRINT_Tumor_result[,c(1:2,3,6,9)]
+plotBeeswarm(plotdata1, "Precision","FigureS2FJ/BPTumor.Precision.beesswarm.pdf")
+
+################################################Figure1D and FigureS2E-G################################################
 #######Figure1D
 hg38_commonPMD=read_bed("meta/commonPMDs_hg38.bed")
 hg38_commonPMD=bed_merge(bed_sort(hg38_commonPMD))
@@ -435,9 +498,9 @@ Cluster=function(pmdFileList, num, pattern, fileIndex, outputPath){
   overlapResult2=overlapResult[overlapResult$Sample%in%ESCA_sampleInfo$Sample,]
   save(stateResult2, ratioResult2, overlapResult2, file=paste0(outputPath, "/", fileIndex, ".RData"))
 }
-Cluster(methylSeekRFileList, 5000, ".MethylSeekR.rmBlackList.bed", "ESCA_hg38_MethylSeekR_30kb", "Figure1D_FigureS1EFG/")
-Cluster(methPipeFileList, 5000, ".MethPipe.rmBlackList.bed", "ESCA_hg38_MethPipe_30kb", "Figure1D_FigureS1EFG/")
-Cluster(model2D3DFileList, 5000, ".Model2D3D.rmBlackList.bed", "ESCA_hg38_MMSeekR_30kb", "Figure1D_FigureS1EFG/")
+Cluster(methylSeekRFileList, 5000, ".MethylSeekR.rmBlackList.bed", "ESCA_hg38_MethylSeekR_30kb", "Figure1D_FigureS2EFG/")
+Cluster(methPipeFileList, 5000, ".MethPipe.rmBlackList.bed", "ESCA_hg38_MethPipe_30kb", "Figure1D_FigureS2EFG/")
+Cluster(model2D3DFileList, 5000, ".Model2D3D.rmBlackList.bed", "ESCA_hg38_MMSeekR_30kb", "Figure1D_FigureS2EFG/")
 
 plotPCA=function(dataSet, num, saveFile){
   varResult=rowVars(as.matrix(dataSet))
@@ -481,11 +544,90 @@ Cluster2=function(outputPath,num, fileIndex, saveFile){
   load(paste0(outputPath, "/", fileIndex, ".RData"))
   plotPCA(ratioResult2, num, saveFile)
 }
-Cluster2("Data/Figure1D_FigureS1EFG/", 5000, "ESCA_hg38_MethylSeekR_30kb", "Figure1D/Figure1D_MethylSeekR.pdf")
-Cluster2("Data/Figure1D_FigureS1EFG/", 5000, "ESCA_hg38_MethPipe_30kb", "Figure1D/Figure1D_MethPipe.pdf")
-Cluster2("Data/Figure1D_FigureS1EFG/", 5000, "ESCA_hg38_MMSeekR_30kb", "Figure1D/Figure1D_MMSeekR.pdf")
+Cluster2("Data/Figure1D_FigureS2EFG/", 5000, "ESCA_hg38_MethylSeekR_30kb", "Figure1D/Figure1D_MethylSeekR.pdf")
+Cluster2("Data/Figure1D_FigureS2EFG/", 5000, "ESCA_hg38_MethPipe_30kb", "Figure1D/Figure1D_MethPipe.pdf")
+Cluster2("Data/Figure1D_FigureS2EFG/", 5000, "ESCA_hg38_MMSeekR_30kb", "Figure1D/Figure1D_MMSeekR.pdf")
 
-#######FigureS1E
+
+###Figure S2HK
+CalDistance.v2=function(PCAFile){
+  PCAData=read_tsv(PCAFile)
+  PCAData=as.data.frame(PCAData)
+  PCAData=PCAData[grep("Nonmalignant", PCAData$Type, invert = T),]
+  result=as.data.frame(matrix(numeric(0),ncol=3))
+  for(type in unique(PCAData$Type)){
+    intraSamples=PCAData[PCAData$Type%in%type,]
+    av.PC1=mean(intraSamples$PC1)
+    av.PC2=mean(intraSamples$PC2)
+    intraSamples_distance=mean(do.call(c, lapply(1:nrow(intraSamples), function(x){((intraSamples[x,]$PC1-av.PC1)^2+(intraSamples[x,]$PC2-av.PC2)^2)^0.5})))
+    interSamples=PCAData[!PCAData$Type%in%type,]
+    interSamples_distance=mean(do.call(c, lapply(1:nrow(interSamples), function(x){((interSamples[x,]$PC1-av.PC1)^2+(interSamples[x,]$PC2-av.PC2)^2)^0.5})))
+    result=rbind(result, data.frame(type=type, intraDis=intraSamples_distance, interDis=interSamples_distance))
+  }
+  result$ratio=result$interDis/result$intraDis
+  return(result)
+}
+MethylSeekR_dis=CalDistance.v2("Figure1D/Figure1D_MethylSeekR.txt")
+MethylSeekR_dis$group="MethylSeekR"
+MethPipe_dis=CalDistance.v2("Figure1D/Figure1D_MethPipe.txt")
+MethPipe_dis$group="MethPipe"
+MMSeekR_dis=CalDistance.v2("Figure1D/Figure1D_MMSeekR.txt")
+MMSeekR_dis$group="MMSeekR"
+plotdata=rbind(MethylSeekR_dis, MethPipe_dis, MMSeekR_dis)
+plotdata$type=gsub("_Tumor", "", plotdata$type)
+plotdata[plotdata$type%in%"EAC/GEJ",]$type="EAC"
+plotdata=as.data.frame(plotdata%>%group_by(group)%>%summarise(ratio=mean(ratio)))
+plotdata$group=factor(plotdata$group, levels=c("MethylSeekR", "MethPipe", "MMSeekR"))
+p=ggplot(data=plotdata, aes(x=group, y=ratio, fill=group)) +
+  geom_bar(stat="identity", position=position_dodge(), width = 0.6)+theme_classic()
+p=p+xlab("")+ylab("Inter-tumor/Intra-tumor")+scale_fill_manual(values=c("blue", "#C900B8", "red"))
+p=p+ggtitle("PCA distance")
+p=p+theme(plot.title = element_text(hjust = 0.5), axis.text = element_text(size=10, color = "black"))
+
+pdf("FigureS2HK/ESCA.PCADistance.pdf", width=4.3, height=3.5)
+print(p)
+dev.off()
+write.table(plotdata, "FigureS2HK/ESCA.PCADistance.txt", row.names = F, col.names = T, sep="\t", quote=F)
+
+CalDistance.v3=function(PCAFile){
+  PCAData=read_tsv(PCAFile)
+  PCAData=as.data.frame(PCAData)
+  PCAData=PCAData[grep("Nonmalignant", PCAData$Subtype, invert = T),]
+  result=as.data.frame(matrix(numeric(0),ncol=3))
+  for(type in unique(PCAData$Subtype)){
+    intraSamples=PCAData[PCAData$Subtype%in%type,]
+    av.PC1=mean(intraSamples$PC1)
+    av.PC2=mean(intraSamples$PC2)
+    intraSamples_distance=mean(do.call(c, lapply(1:nrow(intraSamples), function(x){((intraSamples[x,]$PC1-av.PC1)^2+(intraSamples[x,]$PC2-av.PC2)^2)^0.5})))
+    interSamples=PCAData[!PCAData$Subtype%in%type,]
+    interSamples_distance=mean(do.call(c, lapply(1:nrow(interSamples), function(x){((interSamples[x,]$PC1-av.PC1)^2+(interSamples[x,]$PC2-av.PC2)^2)^0.5})))
+    result=rbind(result, data.frame(type=type, intraDis=intraSamples_distance, interDis=interSamples_distance))
+  }
+  result$ratio=result$interDis/result$intraDis
+  return(result)
+}
+MethylSeekR_dis=CalDistance.v3("FigureS2F/FigureS2F_MethylSeekR.txt")
+MethylSeekR_dis$group="MethylSeekR"
+MethPipe_dis=CalDistance.v3("FigureS2F/FigureS2F_Methpipe.txt")
+MethPipe_dis$group="MethPipe"
+MMSeekR_dis=CalDistance.v3("FigureS2F/FigureS2F_MMSeekR.txt")
+MMSeekR_dis$group="MMSeekR"
+plotdata=rbind(MethylSeekR_dis, MethPipe_dis, MMSeekR_dis)
+plotdata=as.data.frame(plotdata%>%group_by(group)%>%summarise(ratio=mean(ratio)))
+plotdata$group=factor(plotdata$group, levels=c("MethylSeekR", "MethPipe", "MMSeekR"))
+
+p=ggplot(data=plotdata, aes(x=group, y=ratio, fill=group)) +
+  geom_bar(stat="identity", position=position_dodge(), width = 0.6)+theme_classic()
+p=p+xlab("")+ylab("Inter-tumor/Intra-tumor")+scale_fill_manual(values=c("blue", "#C900B8", "red"))
+p=p+ggtitle("PCA distance")
+p=p+theme(plot.title = element_text(hjust = 0.5), axis.text = element_text(size=10, color = "black"))
+pdf("FigureS2HK/BPTumor.PCADistance.pdf", width=4.3, height=3.5)
+print(p)
+dev.off()
+write.table(plotdata, "FigureS2HK/BPTumor.PCADistance.txt", row.names = F, col.names = T, sep="\t", quote=F)
+
+
+#######FigureS2I
 hg38_regions_win2=bed_makewindows(hg38_regions, win_size=10000)
 getPlotDataNew=function(RDataFile, pmdFileList, targetChr, sampleInfo, pattern, saveFile){
   load(RDataFile)
@@ -555,22 +697,22 @@ getPlotDataNew=function(RDataFile, pmdFileList, targetChr, sampleInfo, pattern, 
   write.table(stateResult, file=gsub(".png", ".txt", saveFile), row.names = T, col.names = T, quote=F, sep="\t")
   return(p)
 }
-p1=getPlotDataNew("Data/Figure1D_FigureS1EFG/ESCA_hg38_MethylSeekR_30kb.RData", methylSeekRFileList, "chr16", ESCA_sampleInfo, ".MethylSeekR.rmBlackList.bed", "FigureS1E/FigureS1E_methylSeekR.chr16.png")
-p2=getPlotDataNew("Data/Figure1D_FigureS1EFG/ESCA_hg38_MethPipe_30kb.RData", methPipeFileList, "chr16", ESCA_sampleInfo, ".MethPipe.rmBlackList.bed", "FigureS1E/FigureS1E_methpipe.chr16.png")
-p3=getPlotDataNew("Data/Figure1D_FigureS1EFG/ESCA_hg38_MMSeekR_30kb.RData", model2D3DFileList, "chr16", ESCA_sampleInfo, ".Model2D3D.rmBlackList.bed", "FigureS1E/FigureS1E_multiModel.chr16.png")
-png("FigureS1E/FigureS1E.png", width=3000, height=2100, res=300)
+p1=getPlotDataNew("Data/Figure1D_FigureS2EFG/ESCA_hg38_MethylSeekR_30kb.RData", methylSeekRFileList, "chr16", ESCA_sampleInfo, ".MethylSeekR.rmBlackList.bed", "FigureS2I/FigureS2I_methylSeekR.chr16.png")
+p2=getPlotDataNew("Data/Figure1D_FigureS2EFG/ESCA_hg38_MethPipe_30kb.RData", methPipeFileList, "chr16", ESCA_sampleInfo, ".MethPipe.rmBlackList.bed", "FigureS2I/FigureS2I_methpipe.chr16.png")
+p3=getPlotDataNew("Data/Figure1D_FigureS2EFG/ESCA_hg38_MMSeekR_30kb.RData", model2D3DFileList, "chr16", ESCA_sampleInfo, ".Model2D3D.rmBlackList.bed", "FigureS2I/FigureS2I_MMSeekR.chr16.png")
+png("FigureS2I/FigureS2I.png", width=3000, height=2100, res=300)
 print(ggarrange(p3[[4]], p1[[4]], p2[[4]], ncol=1, align="hv"))
 dev.off()
 
 
-#######FigureS1F
+#######FigureS2G
 hg19_regions=read_bed("meta/hg19/hg19.chrom.sizes")
 blackListResgions=read_bed("meta/hg19/hg19-blacklist.v2.bed", n_fields = 4)
 hg19_regions_rmBlackList=bed_subtract(hg19_regions, blackListResgions)
 hg19_regions_rmBlackList=bed_merge(bed_sort(hg19_regions_rmBlackList))
 hg19_regions_rmBlackList_win=bed_makewindows(hg19_regions_rmBlackList, win_size=30000)
 
-bluePrintSamples=read.table("Data/Figure1D_FigureS1EFG/BLUEPRINT_blood_sampleInfo.txt", sep="\t", header=T, stringsAsFactors = F)
+bluePrintSamples=read.table("Data/Figure1D_FigureS2EFG/BLUEPRINT_blood_sampleInfo.txt", sep="\t", header=T, stringsAsFactors = F)
 bluePrintSamples=bluePrintSamples[order(bluePrintSamples$Type),]
 bluePrintSamples_tumor=bluePrintSamples[!bluePrintSamples$Type%in%c("Myeloid","Lymphoid","Others"),]
 bluePrintSamples_tumor=bluePrintSamples_tumor[order(bluePrintSamples_tumor$Type),]
@@ -637,9 +779,9 @@ ClusterBPTumor=function(pmdFileList, num, fileIndex, sampleInfo, outputPath, pat
   stateResult[is.na(stateResult)]=0
   save(ratioResult, stateResult, overlapResult, file=paste0(outputPath, "/",fileIndex, ".RData"))
 }
-ClusterBPTumor(methylSeekRFileList, 5000, "BLUEPRINT_MethylSeekR_30kb", bluePrintSamples_tumor, "Data/Figure1D_FigureS1EFG/",".PMDs.methylSeekR.bed")
-ClusterBPTumor(methPipeFileList, 5000, "BLUEPRINT_Methpipe_30kb", bluePrintSamples_tumor, "Data/Figure1D_FigureS1EFG/",".methpipe.rmblaskList.bed")
-ClusterBPTumor(MMSeekRFileList, 5000, "BLUEPRINT_MMSeekR_30kb", bluePrintSamples_tumor, "Data/Figure1D_FigureS1EFG/","_PMDs.rmblaskList.bed")
+ClusterBPTumor(methylSeekRFileList, 5000, "BLUEPRINT_MethylSeekR_30kb", bluePrintSamples_tumor, "Data/Figure1D_FigureS2EFG/",".PMDs.methylSeekR.bed")
+ClusterBPTumor(methPipeFileList, 5000, "BLUEPRINT_Methpipe_30kb", bluePrintSamples_tumor, "Data/Figure1D_FigureS2EFG/",".methpipe.rmblaskList.bed")
+ClusterBPTumor(MMSeekRFileList, 5000, "BLUEPRINT_MMSeekR_30kb", bluePrintSamples_tumor, "Data/Figure1D_FigureS2EFG/","_PMDs.rmblaskList.bed")
 
 plotBPTumorPCA=function(dataSet, sampleInfo, saveFile){
   varResult=rowVars(as.matrix(dataSet))
@@ -676,12 +818,12 @@ ClusterBPTumor2=function(fileIndex, sampleInfo, RDataPath, saveFile){
   load(paste0(RDataPath, "/",fileIndex, ".RData"))
   plotBPTumorPCA(ratioResult, sampleInfo, saveFile)
 }
-ClusterBPTumor2("BLUEPRINT_MMSeekR_30kb", bluePrintSamples_tumor, "Data/Figure1D_FigureS1EFG/", "FigureS1F/Figure1D_MMSeekR.pdf")
-ClusterBPTumor2("BLUEPRINT_Methpipe_30kb", bluePrintSamples_tumor, "Data/Figure1D_FigureS1EFG/", "FigureS1F/Figure1D_Methpipe.pdf")
-ClusterBPTumor2("BLUEPRINT_MethylSeekR_30kb", bluePrintSamples_tumor, "Data/Figure1D_FigureS1EFG/", "FigureS1F/Figure1D_MethylSeekR.pdf")
+ClusterBPTumor2("BLUEPRINT_MMSeekR_30kb", bluePrintSamples_tumor, "Data/Figure1D_FigureS2EFG/", "FigureS2G/FigureS2G_MMSeekR.pdf")
+ClusterBPTumor2("BLUEPRINT_Methpipe_30kb", bluePrintSamples_tumor, "Data/Figure1D_FigureS2EFG/", "FigureS2G/FigureS2G_Methpipe.pdf")
+ClusterBPTumor2("BLUEPRINT_MethylSeekR_30kb", bluePrintSamples_tumor, "Data/Figure1D_FigureS2EFG/", "FigureS2G/FigureS2G_MethylSeekR.pdf")
 
 
-#######FigureS1G
+#######FigureS2E
 hg19_regions_win2=bed_makewindows(hg19_regions, win_size=10000)
 getPlotDataNewBPTumor=function(RDataFile, pmdFileList, targetChr, sampleInfo, pattern, saveFile){
   load(RDataFile)
@@ -759,17 +901,17 @@ getPlotDataNewBPTumor=function(RDataFile, pmdFileList, targetChr, sampleInfo, pa
   write.table(stateResult, file=gsub(".png", ".txt", saveFile), row.names = T, col.names = T, quote=F, sep="\t")
   return(p)
 }
-p1=getPlotDataNewBPTumor("Data/Figure1D_FigureS1EFG/BLUEPRINT_MethylSeekR_30kb.RData", methylSeekRFileList, "chr16", bluePrintSamples_tumor, ".PMDs.methylSeekR.bed", "FigureS1G/FigureS1F_methylSeekR.chr16.png")
-p2=getPlotDataNewBPTumor("Data/Figure1D_FigureS1EFG/BLUEPRINT_Methpipe_30kb.RData", methPipeFileList, "chr16", bluePrintSamples_tumor, ".methpipe.rmblaskList.bed", "FigureS1G/FigureS1F_Methpipe.chr16.png")
-p3=getPlotDataNewBPTumor("Data/Figure1D_FigureS1EFG/BLUEPRINT_MMSeekR_30kb.RData", MMSeekRFileList, "chr16", bluePrintSamples_tumor, "_PMDs.rmblaskList.bed", "FigureS1G/FigureS1F_MMSeekR.chr16.png")
+p1=getPlotDataNewBPTumor("Data/Figure1D_FigureS2EFG/BLUEPRINT_MethylSeekR_30kb.RData", methylSeekRFileList, "chr16", bluePrintSamples_tumor, ".PMDs.methylSeekR.bed", "FigureS2E/FigureS2E_methylSeekR.chr16.png")
+p2=getPlotDataNewBPTumor("Data/Figure1D_FigureS2EFG/BLUEPRINT_Methpipe_30kb.RData", methPipeFileList, "chr16", bluePrintSamples_tumor, ".methpipe.rmblaskList.bed", "FigureS2E/FigureS2E_Methpipe.chr16.png")
+p3=getPlotDataNewBPTumor("Data/Figure1D_FigureS2EFG/BLUEPRINT_MMSeekR_30kb.RData", MMSeekRFileList, "chr16", bluePrintSamples_tumor, "_PMDs.rmblaskList.bed", "FigureS2E/FigureS2E_MMSeekR.chr16.png")
 
-png("FigureS1G/FigureS1G.png", width=3000, height=2100, res=300)
+png("FigureS2E/FigureS2E.png", width=3000, height=2100, res=300)
 print(ggarrange(p3[[4]], p1[[4]], p2[[4]], ncol=1, align="hv"))
 dev.off()
 
-################################################FigureS2B################################################F
-load("Data/FigureS2B/mergeESCCNonmalignantCov.RData")
-load("Data/FigureS2B/mergeESCCNonmalignantBeta.RData")
+################################################FigureS1B################################################F
+load("Data/FigureS1B/mergeESCCNonmalignantCov.RData")
+load("Data/FigureS1B/mergeESCCNonmalignantBeta.RData")
 
 ##calculate the correlation
 cor_result=as.data.frame(matrix(numeric(0), ncol=3))
@@ -787,17 +929,17 @@ for(i in 4:(8-1)){
     }
   }
 }
-write.table(cor_result, file="FigureS2B/cor_result.txt", row.names = F, col.names = T, sep="\t", quote=F)
+write.table(cor_result, file="FigureS1B/cor_result.txt", row.names = F, col.names = T, sep="\t", quote=F)
 
-##change FigureS2B/cor_result.txt to FigureS2B/FigureS2B.txt
-data=read.table("FigureS2B/FigureS2B.txt", sep="\t", row.names = 1, header = T, stringsAsFactors = F)
+##change FigureS1B/cor_result.txt to FigureS1B/FigureS1B.txt
+data=read.table("FigureS1B/FigureS1B.txt", sep="\t", row.names = 1, header = T, stringsAsFactors = F)
 breaks=seq(0,1,by=0.01)
 colorList=colorRampPalette(brewer.pal(9, "PuRd"))(length(breaks))
-pdf("FigureS2B/FigureS2B.pdf")
+pdf("FigureS1B/FigureS1B.pdf")
 print(pheatmap(data, breaks= breaks, color=colorList, cluster_rows = F, cluster_cols = F,display_numbers=T,fontsize = 14))
 dev.off()
 
-################################################FigureS2C################################################
+################################################FigureS3A################################################
 totalGenomeLength=read_bed("meta/hg38_length.bed")
 blackList=read_bed("meta/hg38-blacklist.v2.change.bed",n_fields = 4)
 totalGenomeLength=as.data.frame(bed_subtract(totalGenomeLength, blackList))
@@ -840,11 +982,11 @@ plotGenomeCov=function(PMDfilePath, pattern, saveFile){
   print(p)
   dev.off()
 }
-plotGenomeCov("Data/MMSeekR_PMDs/PMDs/", ".Model2D3D.rmBlackList.bed", "FigureS2C/FigureS2C.pdf")
+plotGenomeCov("Data/MMSeekR_PMDs/PMDs/", ".Model2D3D.rmBlackList.bed", "FigureS3A/FigureS3A.pdf")
 
 
-################################################FigureS2DE################################################
-##bash Shell/FigureS2DE/runMerge.sh
+################################################FigureS3BC################################################
+##bash Shell/FigureS3BC/runMerge.sh
 plotCumSumPlot=function(PMDfile,title, width, saveFile){
   data=read.table(PMDfile,sep="\t", stringsAsFactors = F,header=T)
   data=data[1:4]
@@ -862,12 +1004,12 @@ plotCumSumPlot=function(PMDfile,title, width, saveFile){
   print(p)
   dev.off()
 }
-plotCumSumPlot("Data/MMSeekR_PMDs/ESCC_PMDs_multiinter.bed", "ESCC Tumor", 8, "FigureS2DE/FigureS2D.pdf")
-plotCumSumPlot("Data/MMSeekR_PMDs/EAC_PMDs_multiinter.bed", "EAC/GEJ Tumor", 8, "FigureS2DE/FigureS2E.pdf")
+plotCumSumPlot("Data/MMSeekR_PMDs/ESCC_PMDs_multiinter.bed", "ESCC Tumor", 8, "FigureS3BC/FigureS3B.pdf")
+plotCumSumPlot("Data/MMSeekR_PMDs/EAC_PMDs_multiinter.bed", "EAC/GEJ Tumor", 8, "FigureS3BC/FigureS3C.pdf")
 
 
-################################################FigureS3A################################################
-load("Data/FigureS3A/AllSample_beta_cov7.RData")
+################################################FigureS4A################################################
+load("Data/FigureS4A/AllSample_beta_cov7.RData")
 plotPCA=function(plotdata,annotation_col, colorInfo1, colorInfo2, saveFile){
   plotdata=t(plotdata)
   pca <- prcomp(plotdata,scale = TRUE)
@@ -911,9 +1053,9 @@ getPCAPlot=function(plotdata, saveFile, num=8000){
 allMethylationInfo=read.table("Figure1B/Methylaton_sixTypes.txt", sep="\t", stringsAsFactors = F, header=T)
 colorInfo1=allMethylationInfo[,colnames(allMethylationInfo)%in%c("Sample", "Type", "Gobal")]
 colorInfo2=allMethylationInfo[,colnames(allMethylationInfo)%in%c("Sample", "Type", "commonPMD")]
-getPCAPlot(combine_betaMatrix, "FigureS3A/FigureS3A.pdf")
+getPCAPlot(combine_betaMatrix, "FigureS4A/FigureS4A.pdf")
 
-################################################FigureS3B################################################
+################################################FigureS4B################################################
 totalGenomeLength=read_bed("meta/hg38_length.bed")
 blackList=read_bed("meta/hg38-blacklist.v2.change.bed",n_fields = 4)
 totalGenomeLength=as.data.frame(bed_subtract(totalGenomeLength, blackList))
@@ -973,10 +1115,10 @@ maskedPMDRegions=function(EACPMDFile, ESCCPMDFile, outputFile, saveVennPlot){
                "EAC_commonPMDs", "ESCC_commonPMDs", "#0000F5", "#EA3323", saveVennPlot)
 }
 maskedPMDRegions("Data/MMSeekR_PMDs/EAC_commonPMDs.bed", "Data/MMSeekR_PMDs/ESCC_commonPMDs.bed", "Data/MMSeekR_PMDs/ESCA_commonPMDs_union.bed",
-                 "FigureS3B/FigureS3B.pdf")
+                 "FigureS4B/FigureS4B.pdf")
 
-################################################Figure2AB and FigureS2A and Figure4B################################################
-##Figure2A and FigureS2A
+################################################Figure2AB, FigureS1A and Figure4B################################################
+##Figure2A 
 ##Prepare the data 
 #bash Shell/Figure2A/get_Hg38_10kb_meanMethylation.sh
 get_hg38_10k=function(inputPath, suffix){
@@ -1018,12 +1160,12 @@ for(chrInfo in paste0("chr", 1:22, "_")){
   chr_methy=hg38_10k_mean[,grep(chrInfo,colnames(hg38_10k_mean))]
   annotation_row2=annotation_row[rownames(annotation_row)%in%rownames(chr_methy),,drop=F]
   if(chrInfo=="chr1_"){
-    pdf(paste0("FigureS2A/", gsub("_", "", chrInfo),"_test.pdf"), width=7, height=6)
+    pdf(paste0("FigureS1A/", gsub("_", "", chrInfo),"_test.pdf"), width=7, height=6)
     print(pheatmap(chr_methy[,1:500], breaks = methyBreaksList, show_colnames = F,cluster_rows = F, cluster_cols = F, annotation_row=annotation_row2, annotation_colors = ann_colors,
                    color = colorRampPalette(c("#000436","#021EA9","#1632FB","#6E34FC","#C732D5","#FD619D","#FF9965","#FFD32B","#FFFC5A"))(n = length(methyBreaksList))))
     dev.off()
   }
-  png(paste0("FigureS2A/", gsub("_", "", chrInfo), ".png"), res=300, width=1500, height=1500)
+  png(paste0("FigureS1A/", gsub("_", "", chrInfo), ".png"), res=300, width=1500, height=1500)
   print(pheatmap(chr_methy, breaks = methyBreaksList, show_colnames = F,cluster_rows = F, cluster_cols = F, annotation_row=annotation_row2, annotation_colors = ann_colors,fontsize_row=8,
                  color = colorRampPalette(c("#000436","#021EA9","#1632FB","#6E34FC","#C732D5","#FD619D","#FF9965","#FFD32B","#FFFC5A"))(n = length(methyBreaksList))))
   dev.off()
@@ -1129,7 +1271,7 @@ pdf("Figure2C_7A/Figure2C.pdf", width=7, height=4)
 print(ggarrange(p1,p2, nrow=1))
 dev.off()
 
-pdf("Figure2C_7A/Figure7.pdf", width=7, height=4)
+pdf("Figure2C_7A/Figure7A.pdf", width=7, height=4)
 print(ggarrange(p3,p4, nrow=1))
 dev.off()
 
@@ -1223,9 +1365,9 @@ plotHM450kMethylationLinePlot=function(probesFile, methylationMatrix, sampleInfo
 plotHM450kMethylationLinePlot("meta/HT450k.probe.rmCGI.rmblackList.solo.bed", TCGAprobeMethylationMatrix, 
                               TCGAprobeSampleInfo, "Figure2D/Figure2D.TCGA.pdf", 13, 11)
 
-################################################FigureS2F###############################################
-load("Data/FigureS2F/EPIC.RData")
-load("Data/FigureS2F/EPIC_probes.RData")
+################################################FigureS3D###############################################
+load("Data/FigureS3D/EPIC.RData")
+load("Data/FigureS3D/EPIC_probes.RData")
 EPICprobeMethylationMatrix=result
 EPICprobeSampleInfo=sampleInfo
 EPICprobeSampleInfo[EPICprobeSampleInfo$Type%in%"EAC_Normal",]$Type="ESCC_Normal"
@@ -1303,16 +1445,16 @@ plotEPICMethylationLinePlot=function(probesInfo, methylationMatrix, sampleInfo, 
   dev.off()
 }
 plotEPICMethylationLinePlot(EPIC_probes_rmblackList_rmCGI_solo, EPICprobeMethylationMatrix, 
-                            EPICprobeSampleInfo, "FigureS2F/FigureS2F.EPIC.pdf", 9, 11)
+                            EPICprobeSampleInfo, "FigureS3D/FigureS3D.EPIC.pdf", 9, 11)
 
-################################################FigureS2G################################################
+################################################FigureS3E################################################
 ###Validate by WGBS
 ## data in Data/OtherESCC
-#./getRegionMeanBetaValuesForGSE149608.sh ESCA_sharedHMDs.bed
-#./getRegionMeanBetaValuesForGSE149608.sh ESCA_sharedPMDs.bed
-#./getRegionMeanBetaValuesForGSE149608.sh EAC_sharedPMDs_specificRegion.bed
-#./getRegionMeanBetaValuesForGSE149608.sh ESCC_sharedPMDs_specificRegion.bed
-#merge the result "FigureS2G/GSE149608_regionLevels_methylation.soloCpGs.txt"
+#Shell FigureS3E/getRegionMeanBetaValuesForGSE149608.sh ESCA_sharedHMDs.bed
+#Shell FigureS3E/getRegionMeanBetaValuesForGSE149608.sh ESCA_sharedPMDs.bed
+#Shell FigureS3E/getRegionMeanBetaValuesForGSE149608.sh EAC_sharedPMDs_specificRegion.bed
+#Shell FigureS3E/getRegionMeanBetaValuesForGSE149608.sh ESCC_sharedPMDs_specificRegion.bed
+#merge the result "FigureS3E/GSE149608_regionLevels_methylation.soloCpGs.txt"
 plotGeneLineplot=function(plotdata, type){
   plotdata$GeneType=factor(plotdata$GeneType, levels=c("SharedPMDs", "EAC_specificPMDs", "ESCC_specificPMDs", "SharedHMDs"))
   p=ggplot(data=plotdata, aes(x=GeneType, y=Methylation, group=Sample)) + geom_line(alpha=0.2, color="darkblue")+ geom_point(alpha=0.5, color="darkblue", size=0.8)+theme_classic()
@@ -1325,16 +1467,16 @@ plotGeneLineplot=function(plotdata, type){
             legend.text =element_text(size=12, color="black"),legend.position = "none")
   return(p)
 }
-GSEWGBS=read.table("FigureS2G/GSE149608_regionLevels_methylation.soloCpGs.txt",header=T, stringsAsFactors =F, sep="\t")
+GSEWGBS=read.table("FigureS3E/GSE149608_regionLevels_methylation.soloCpGs.txt",header=T, stringsAsFactors =F, sep="\t")
 GSEWGBS=melt(GSEWGBS, id.vars = c("Sample", "Type"))
 colnames(GSEWGBS)=c("Sample", "SampleType", "GeneType", "Methylation")
 p1=plotGeneLineplot(GSEWGBS[GSEWGBS$SampleType%in%"ESCC_Tumor",], "ESCC_Tumor samples")
 p2=plotGeneLineplot(GSEWGBS[GSEWGBS$SampleType%in%"ESCC_Normal",], "ESCC_Normal samples")
-pdf("FigureS2G/FigureS2G.pdf", width=7, height=4.5)
+pdf("FigureS3E/FigureS3E.pdf", width=7, height=4.5)
 print(ggarrange(p1,p2, nrow=1))
 dev.off()
 
-################################################Figure2E and FigureS2H################################################
+################################################Figure2E and FigureS3F################################################
 #####region compartmentB (predicted using TCGA 450k array)
 domainFile1="Data/MMSeekR_PMDs/EAC_specificPMDs.bed"
 domainFile2="Data/MMSeekR_PMDs/ESCC_specificPMDs.bed"
@@ -1347,8 +1489,8 @@ domainData3=read_bed(domainFile3)
 domainData3=bed_merge(bed_sort(domainData3))
 
 ##origin data from /Volumes/YUAN_2T/WGBS_project/20200312_Unmask/PMD/CompartmentsA_B
-comBFile1="Data/Figure2E_S2H/EACTumor_result.compartmentB.bed"
-comBFile2="Data/Figure2E_S2H/ESCCTumor_result.compartmentB.bed"
+comBFile1="Data/Figure2E_S3F/EACTumor_result.compartmentB.bed"
+comBFile2="Data/Figure2E_S3F/ESCCTumor_result.compartmentB.bed"
 comBData1=read_bed(comBFile1, n_fields = 4)
 comBData1=comBData1[,1:3]
 comBData1=bed_merge(bed_sort(comBData1))
@@ -1385,13 +1527,215 @@ dev.off()
 
 plotdata=data.frame(type=c("SharedPMDs", "SharedPMDs"), compartment=c("EAC_tumor_compB", "ESCC_tumor_compB"), rate=c(rate5, rate6))
 plotdata$compartment=factor(plotdata$compartment, levels=c("EAC_tumor_compB", "ESCC_tumor_compB"))
-write.table(plotdata, file="FigureS2H/FigureS2H_comparementB.txt")
+write.table(plotdata, file="FigureS3F/FigureS3F_comparementB.txt")
 p<-ggplot(data=plotdata, aes(x=type, y=rate, fill=compartment)) + geom_bar(stat="identity", position=position_dodge(), color="white")+theme_classic()
 p=p+xlab("")+ylab("Fraction of PMDs overlapping with compartentB")
 p=p+theme(axis.text =element_text(size=12), axis.title=element_text(size=14))+scale_fill_manual(values=c("#0000F5","#EA3323"))
-pdf("FigureS2H/FigureS2H_comparementB.pdf")
+pdf("FigureS3F/FigureS3F_comparementB.pdf")
 print(p)
 dev.off()
+
+
+###Figure S3H and Figure S4I
+##DNA methylation data from TCGA
+load("meta/TCGA-ESCA_methylation_hg38.v2.RData")
+library(TCGAbiolinks)
+clinical <- GDCquery_clinic(project = "TCGA-ESCA", type = "clinical")
+clinical_change=clinical[,c("submitter_id", "ajcc_pathologic_stage", "primary_diagnosis", "ajcc_pathologic_n",
+                            "alcohol_history", "vital_status", "pack_years_smoked", "age_at_index")]
+clinical_change$type="other"
+clinical_change[clinical_change$primary_diagnosis%in%c("Adenocarcinoma, NOS"),]$type="EAC"
+clinical_change[clinical_change$primary_diagnosis%in%c("Squamous cell carcinoma, NOS"),]$type="ESCC"
+clinical_change=merge(clinical_change, match.file.cases[match.file.cases$Type%in%"Tumor",c(1,4)], by.x="submitter_id", by.y="Sample")
+clinical_change=rbind(clinical_change[clinical_change$type%in%"EAC", ], clinical_change[clinical_change$type%in%"ESCC", ])
+
+getMethylationHT450k=function(regionFile, probesFile, type, methylationMatrix){
+  tempData=read_bed(regionFile,n_fields = 5)
+  probesMatrix=read_bed(probesFile, n_fields = 4)
+  tempData_probes=bed_intersect(probesMatrix,tempData)
+  tempData_probes=as.data.frame(tempData_probes)
+  tempData_probes=unique(tempData_probes[tempData_probes$.overlap==2,]$name.x)
+  print(length(tempData_probes))
+  tempData=methylationMatrix[rownames(methylationMatrix)%in%tempData_probes,, drop=F]
+  tempData=data.frame(colMeans(tempData, na.rm = T))
+  colnames(tempData)=type
+  return(tempData)
+}
+
+ESCA_methy=result[ ,clinical_change$SampleName]
+ESCA_methy_ESCCPMD=getMethylationHT450k("Data/MMSeekR_PMDs/ESCC_specificPMDs.bed", "meta/HT450k.probe.rmCGI.rmblackList.solo.bed", "ESCC",  ESCA_methy)
+ESCA_methy_EACPMD=getMethylationHT450k("Data/MMSeekR_PMDs/EAC_specificPMDs.bed", "meta/HT450k.probe.rmCGI.rmblackList.solo.bed", "EAC",  ESCA_methy)
+ESCA_methy_PMD=cbind(ESCA_methy_ESCCPMD, ESCA_methy_EACPMD)
+ESCA_methy_PMD$delta=ESCA_methy_PMD$ESCC-ESCA_methy_PMD$EAC
+ESCA_methy_PMD=data.frame(sample=rownames(ESCA_methy_PMD), ESCA_methy_PMD)
+ESCA_methy_PMD=merge(ESCA_methy_PMD, clinical_change[,c(2,4,5,6,7,8,9,10)], by.x="sample", by.y="SampleName")
+write.table(ESCA_methy_PMD, file="FigureS3H_S4I/FigureS3H.PMD.clinical.txt", row.names = F, col.names = T, sep="\t", quote=F)
+
+ESCA_methy_ESCCDMR=getMethylationHT450k("Data/MaskUnionPMDs_DMRs/hypoESCC_Tumor.bed",
+                                        "meta/HT450k.probe.rmblackList.bed", "ESCC",  ESCA_methy)
+ESCA_methy_EACDMR=getMethylationHT450k("Data/MaskUnionPMDs_DMRs/hypoEAC_Tumor.bed",
+                                       "meta/HT450k.probe.rmblackList.bed", "EAC",  ESCA_methy)
+ESCA_methy_DMR=cbind(ESCA_methy_ESCCDMR, ESCA_methy_EACDMR)
+ESCA_methy_DMR$delta=ESCA_methy_DMR$ESCC-ESCA_methy_DMR$EAC
+ESCA_methy_DMR=data.frame(sample=rownames(ESCA_methy_DMR), ESCA_methy_DMR)
+ESCA_methy_DMR=merge(ESCA_methy_DMR, clinical_change[,c(2,4,5,6,7,8,9,10)], by.x="sample", by.y="SampleName")
+write.table(ESCA_methy_DMR, file="FigureS3H_S4I/FigureS4I.DMR.clinical.txt", row.names = F, col.names = T, sep="\t", quote=F)
+
+plotClinicalFigures=function(type, ylab, ESCA_methy_data){
+  ESCA_methy_data=ESCA_methy_data[ESCA_methy_data$type%in%type,]
+  
+  plotdata1=ESCA_methy_data[,c("sample", type, "age_at_index")]
+  colnames(plotdata1)=c("sample", "methylation", "Age")
+  plotdata1$group=">=60"
+  plotdata1[plotdata1$Age<60,]$group="<60"
+  plotdata1$group=factor(plotdata1$group, levels=c("<60", ">=60"))
+  print(table(plotdata1$group))
+  p1=ggplot(plotdata1, aes(x = group, y = methylation)) +geom_boxplot(width=0.5)+ geom_beeswarm(cex = 3)+theme_classic()
+  p1=p1+xlab("")+ylab(ylab)+ylim(0,0.8)
+  p1=p1+theme(axis.text = element_text(size=12, color="black"), axis.title.y = element_text(size=14))
+  test=t.test(plotdata1[plotdata1$group%in%"<60",]$methylation, plotdata1[plotdata1$group%in%">=60",]$methylation)
+  print(test$p.value)
+
+  plotdata3=ESCA_methy_data[,c("sample", type, "ajcc_pathologic_n")]
+  colnames(plotdata3)=c("sample", "methylation", "Lymph_node_metastasis")
+  plotdata3$group=NA
+  plotdata3[plotdata3$Lymph_node_metastasis%in%c("N0"),]$group="No"
+  plotdata3[plotdata3$Lymph_node_metastasis%in%c("N1","N2","N3"),]$group="Yes"
+  plotdata3=plotdata3[!is.na(plotdata3$group),]
+  print(table(plotdata3$group))
+  plotdata3$group=factor(plotdata3$group, levels=c("No", "Yes"))
+  p3=ggplot(plotdata3, aes(x = group, y = methylation)) +geom_boxplot(width=0.5)+ geom_beeswarm(cex = 3)+theme_classic()
+  p3=p3+xlab("Lymph node metastasis")+ylab(ylab)+ylim(0,0.8)
+  p3=p3+theme(axis.text = element_text(size=12, color="black"), axis.title = element_text(size=14))
+  test=t.test(plotdata3[plotdata3$group%in%"No",]$methylation, plotdata3[plotdata3$group%in%"Yes",]$methylation)
+  print(test$p.value)
+  
+  plotdata4=ESCA_methy_data[,c("sample", type, "ajcc_pathologic_stage")]
+  colnames(plotdata4)=c("sample", "methylation", "stage")
+  plotdata4$group=NA
+  plotdata4[plotdata4$stage%in%c("Stage IA", "Stage IB", "Stage IC", "Stage I",
+                                 "Stage IIA", "Stage IIB", "Stage IIC", "Stage II"),]$group="Low stage (I-II)"
+  plotdata4[plotdata4$stage%in%c("Stage IIIA", "Stage IIIB", "Stage IIIC", "Stage III",
+                                 "Stage IVA", "Stage IVB", "Stage IVC", "Stage IV"),]$group="High stage (III-IV)"
+  plotdata4=plotdata4[!is.na(plotdata4$group),]
+  plotdata4$group=factor(plotdata4$group, levels=c("Low stage (I-II)", "High stage (III-IV)"))
+  print(table(plotdata4$group))
+  p4=ggplot(plotdata4, aes(x = group, y = methylation)) +geom_boxplot(width=0.5)+ geom_beeswarm(cex = 3)+theme_classic()
+  p4=p4+xlab("")+ylab(ylab)+ylim(0,0.8)
+  p4=p4+theme(axis.text = element_text(size=12, color="black"), axis.title = element_text(size=14))
+  test=t.test(plotdata4[plotdata4$group%in%"Low stage (I-II)",]$methylation, plotdata4[plotdata4$group%in%"High stage (III-IV)",]$methylation)
+  print(test$p.value)
+  
+  plotdata5=ESCA_methy_data[,c("sample", type, "alcohol_history")]
+  colnames(plotdata5)=c("sample", "methylation", "alcohol_history")
+  plotdata5=plotdata5[!is.na(plotdata5$alcohol_history)&!plotdata5$alcohol_history%in%"Not Reported",]
+  plotdata5$alcohol_history=factor(plotdata5$alcohol_history, levels=c("No", "Yes"))
+  print(table(plotdata5$alcohol_history))
+  p5=ggplot(plotdata5, aes(x = alcohol_history, y = methylation)) +geom_boxplot(width=0.5)+ geom_beeswarm(cex = 3)+theme_classic()
+  p5=p5+xlab("alcohol history")+ylab(ylab)+ylim(0,0.8)
+  p5=p5+theme(axis.text = element_text(size=12, color="black"), axis.title = element_text(size=14))
+  test=t.test(plotdata5[plotdata5$alcohol_history%in%"No",]$methylation, plotdata5[plotdata5$alcohol_history%in%"Yes",]$methylation)
+  print(test$p.value)
+  
+  plotdata6=ESCA_methy_data[,c("sample", type, "pack_years_smoked")]
+  colnames(plotdata6)=c("sample", "methylation", "smoking_years")
+  plotdata6$group=NA
+  plotdata6[is.na(plotdata6$smoking_years),]$group="No"
+  plotdata6[!is.na(plotdata6$smoking_years),]$group="Yes"
+  plotdata6$group=factor(plotdata6$group, levels=c("No", "Yes"))
+  print(table(plotdata6$group))
+  p6=ggplot(plotdata6, aes(x = group, y = methylation)) +geom_boxplot(width=0.5)+ geom_beeswarm(cex = 3)+theme_classic()
+  p6=p6+xlab("smoking status")+ylab(ylab)+ylim(0,0.8)
+  p6=p6+theme(axis.text = element_text(size=12, color="black"), axis.title = element_text(size=14))
+  test=t.test(plotdata6[plotdata6$group%in%"No",]$methylation, plotdata6[plotdata6$group%in%"Yes",]$methylation)
+  print(test$p.value)
+  
+  plitList=list()
+  plitList[["age"]]=p1
+  # plitList[["vital"]]=p2
+  plitList[["metastasis"]]=p3
+  plitList[["stage"]]=p4
+  plitList[["alcohol"]]=p5
+  plitList[["smoking"]]=p6
+  return(plitList)
+}
+ESCCDMR=plotClinicalFigures("ESCC", "ESCC specific DMRs methylation", ESCA_methy_DMR)
+pdf("FigureS3H_S4I/FigureS4I.ESCC.DMR.clinical.pdf", width=15, height=3)
+ggarrange(ESCCDMR$age, ESCCDMR$metastasis, ESCCDMR$stage, ESCCDMR$alcohol, ESCCDMR$smoking, nrow=1)
+dev.off()
+ESCCPMD=plotClinicalFigures("ESCC", "ESCC specific PMDs methylation", ESCA_methy_PMD)
+pdf("FigureS3H_S4I/FigureS3H.ESCC.PMD.clinical.pdf", width=15, height=3)
+ggarrange(ESCCPMD$age, ESCCPMD$metastasis, ESCCPMD$stage, ESCCPMD$alcohol, ESCCPMD$smoking, nrow=1)
+dev.off()
+
+EACDMR=plotClinicalFigures("EAC", "EAC specific DMRs methylation", ESCA_methy_DMR)
+pdf("FigureS3H_S4I/FigureS4I.EAC.DMR.clinical.pdf", width=15, height=3)
+ggarrange(EACDMR$age, EACDMR$metastasis, EACDMR$stage, EACDMR$alcohol, EACDMR$smoking, nrow=1)
+dev.off()
+EACPMD=plotClinicalFigures("EAC", "EAC specific PMDs methylation", ESCA_methy_PMD)
+pdf("FigureS3H_S4I/FigureS3H.EAC.PMD.clinical.pdf", width=15, height=3)
+ggarrange(EACPMD$age, EACPMD$metastasis, EACPMD$stage, EACPMD$alcohol, EACPMD$smoking, nrow=1)
+dev.off()
+
+###FigS3I and S4J###
+##WGS data from 32194853
+plotClinicalFigures=function(ylab, sampleFile, methylationFile, saveFile){
+  ESCC_Pair42_methy=read_tsv(methylationFile)
+  colnames(ESCC_Pair42_methy)=c("sample", "methylation")
+  ESCC_Pair42_methy=as.data.frame(ESCC_Pair42_methy)
+  data_info=read_tsv(sampleFile)
+  data_info=as.data.frame(data_info)
+  ESCC_Pair42_methy=merge(ESCC_Pair42_methy, data_info[,c(2:4,8:10)], by.x="sample", by.y="Name")
+  
+  
+  plotdata1=ESCC_Pair42_methy[,c("sample", "methylation", "Age")]
+  plotdata1$group=">=60"
+  plotdata1[plotdata1$Age<60,]$group="<60"
+  plotdata1$group=factor(plotdata1$group, levels=c("<60", ">=60"))
+  p1=ggplot(plotdata1, aes(x = group, y = methylation)) +geom_boxplot(width=0.5)+ geom_beeswarm(cex = 4)+theme_classic()
+  p1=p1+xlab("Age")+ylab(ylab)+ylim(0,0.85)
+  p1=p1+theme(axis.text = element_text(size=12, color="black"), axis.title.y = element_text(size=14))
+  test=t.test(plotdata1[plotdata1$group%in%"<60",]$methylation, plotdata1[plotdata1$group%in%">=60",]$methylation)
+  print(test$p.value)
+  write.table(plotdata1, gsub(".clinical.pdf",".age.txt", saveFile), row.names = F, col.names = T,sep="\t", quote=F)
+  
+  plotdata3=ESCC_Pair42_methy[,c("sample", "methylation", "Lymph_node_metastasis")]
+  plotdata3$Lymph_node_metastasis=factor(plotdata3$Lymph_node_metastasis, levels=c("No", "Yes"))
+  p3=ggplot(plotdata3, aes(x = Lymph_node_metastasis, y = methylation)) +geom_boxplot(width=0.5)+ geom_beeswarm(cex = 4)+theme_classic()
+  p3=p3+xlab("Lymph node metastasis")+ylab(ylab)+ylim(0,0.85)
+  p3=p3+theme(axis.text = element_text(size=12, color="black"), axis.title = element_text(size=14))
+  test=t.test(plotdata3[plotdata3$Lymph_node_metastasis%in%"No",]$methylation, plotdata3[plotdata3$Lymph_node_metastasis%in%"Yes",]$methylation)
+  print(test$p.value)
+  write.table(plotdata3, gsub(".clinical.pdf",".metastasis.txt", saveFile), row.names = F, col.names = T,sep="\t", quote=F)
+  
+  plotdata4=ESCC_Pair42_methy[,c("sample", "methylation", "TNM_stage")]
+  rstatix::anova_test(data=plotdata4, methylation ~ TNM_stage)
+  print(table(ESCC_Pair42_methy$TNM_stage))
+  p4=ggplot(plotdata4, aes(x = TNM_stage, y = methylation)) +geom_boxplot(width=0.5)+ geom_beeswarm(cex = 2)+theme_classic()
+  p4=p4+ylab(ylab)+ylim(0,0.85)
+  p4=p4+theme(axis.text = element_text(size=12, color="black"), axis.title = element_text(size=14))
+  stageType=unique(plotdata4$TNM_stage)
+  for(i in 1:(length(stageType)-1)){
+    for(j in (i+1):length(stageType)){
+      test=t.test(plotdata4[plotdata4$TNM_stage%in%stageType[i],]$methylation, plotdata4[plotdata4$TNM_stage%in%stageType[j],]$methylation)
+      print(paste0(stageType[i], " ", stageType[j], " ", test$p.value))
+    }
+  }
+  write.table(plotdata4, gsub(".clinical.pdf",".TNM_stage.txt", saveFile), row.names = F, col.names = T,sep="\t", quote=F)
+  
+  plitList=list()
+  plitList[["age"]]=p1
+  plitList[["metastasis"]]=p3
+  plitList[["TNM_stage"]]=p4
+  pdf(saveFile, width=10, height=3)
+  print(ggarrange(ESCCPMD$age, ESCCPMD$metastasis, ESCCPMD$TNM_stage, nrow=1))
+  dev.off()
+}
+plotClinicalFigures("ESCC-specific\nPMDs methylation", "Data/FigureS3I_S4J/Pair42_sample_info.txt",
+                    "Data/FigureS3I_S4J/ESCC_PMD.result.txt", "FigureS3I_S4J/FigureS3I.PMD.clinical.pdf")
+
+plotClinicalFigures("ESCC-specific\nDMRs methylation", "Data/FigureS3I_S4J/Pair42_sample_info.txt",
+                    "Data/FigureS3I_S4J/ESCC_DMR.result.txt", "FigureS3I_S4J/FigureS4J.DMR.clinical.pdf")
 
 ################################################Figure2F################################################
 ########Figure2F EBI EAC mutation
@@ -1415,7 +1759,6 @@ plotMutationBoxplot=function(mutationData, saveFile){
   mutation_pvalue=rbind(mutation_pvalue, data.frame(Type1="ESCC_specificPMDs", Type2="sharedHMDs", pvalue=t.test(ESCC_specificPMDs_mutant, sharedHMDs_mutant)$p.value))
   write.table(mutation_pvalue, gsub(".pdf", "_pvalue.txt", saveFile), row.names = F, col.names = T, sep="\t", quote=F)
 }
-
 EAC_specificPMDs=read_bed("Data/MMSeekR_PMDs/EAC_specificPMDs.hg19.bed")
 ESCC_specificPMDs=read_bed("Data/MMSeekR_PMDs/ESCC_specificPMDs.hg19.bed")
 ESCA_sharePMDs=read_bed("Data/MMSeekR_PMDs/ESCA_sharedPMDs.hg19.bed")
@@ -1485,6 +1828,190 @@ mutationResult$Type=factor(as.character(mutationResult$Type), levels=c("sharedPM
 write.table(mutationResult, "Figure2F/Figure2F_ESCC.txt", row.names = F, col.names = T, sep="\t", quote=F)
 plotMutationBoxplot(mutationResult, "Figure2F/Figure2F_ESCC.pdf")
 
+##########Figure S3G signitures
+ref_genome <- "BSgenome.Hsapiens.UCSC.hg19"
+genome <- BSgenome::getBSgenome(ref_genome)
+EAC_specificPMDs=read_bed("Data/MMSeekR_PMDs/EAC_specificPMDs.hg19.bed")
+ESCC_specificPMDs=read_bed("Data/MMSeekR_PMDs/ESCC_specificPMDs.hg19.bed")
+ESCA_sharePMDs=read_bed("Data/MMSeekR_PMDs/ESCA_sharedPMDs.hg19.bed")
+ESCA_shareHMDs=read_bed("Data/MMSeekR_PMDs/ESCA_sharedHMDs.hg19.bed")
+
+vcfFileList=dir("../EAC_EBI_vcf/", pattern = "vcf", full=T)
+vcfFileSample=gsub("__pv.1.[1-9]__rg.grch37_g1k__al.bwa_mem__.snp.pass.vcf", "",basename(vcfFileList))
+vcfFileData=data.frame(sample=vcfFileSample, vcf=vcfFileList)
+
+grl_EACspecificPMDList=list()
+gral_allList=list()
+for(i in 1:nrow(vcfFileData)){
+  print(i)
+  grl <- purrr::map(vcfFileData[i,2], MutationalPatterns:::.read_single_vcf_as_grange, 
+                    genome, group="auto", change_seqnames=T) %>% GenomicRanges::GRangesList()
+  grl=get_mut_type(grl)
+  ###all SNV
+  gral_allList[[vcfFileData[i,1]]]=grl[[1]]
+  
+  grl_data=gr_to_bed(grl[[1]])
+  grl_data$name=names(grl[[1]])
+  
+  ###EAC_specificPMD_SNVs
+  grl_data2=bed_intersect(grl_data, EAC_specificPMDs)
+  grl_EACspecificPMD=grl[[1]][names(grl[[1]])%in%grl_data2$name.x,]
+  grl_EACspecificPMDList[[vcfFileData[i,1]]]=grl_EACspecificPMD
+}
+grl_EACspecificPMD_mat <- mut_matrix(vcf_list = grl_EACspecificPMDList, ref_genome = ref_genome)
+grl_all_mat <- mut_matrix(vcf_list = gral_allList, ref_genome = ref_genome)
+save(grl_EACspecificPMD_mat, grl_all_mat, file="FigureS3G/EAC_mutation96.RData")
+grl_all_mat2=data.frame("Mutation Types"=rownames(grl_all_mat), grl_all_mat, check.names = F)
+write.table(grl_all_mat2, file="FigureS3G/EAC_all_mutation.txt", row.names = F, col.names = T, sep="\t", quote=F)
+grl_EACspecificPMD_mat2=data.frame("Mutation Types"=rownames(grl_EACspecificPMD_mat), grl_EACspecificPMD_mat, check.names = F)
+write.table(grl_EACspecificPMD_mat2, file="FigureS3G/EAC_specificPMD_mutation.txt", row.names = F, col.names = T, sep="\t", quote=F)
+
+####ESCC mutation
+mutationData=read.csv("Data/Figure2F/PMID32398863_41422_2020_333_MOESM23_ESM.csv")
+mutationData=mutationData[mutationData$Variant_Type%in%"SNP",]
+mutationData$lable=paste0(mutationData$Tumor_Sample_Barcode,":", mutationData$Matched_Norm_Sample_Barcode)
+mutationData2=split(mutationData, mutationData$lable)
+grl_ESCCspecificPMDList=list()
+gral_allList=list()
+for(i in 1:length(mutationData2)){
+  print(i)
+  grlData=mutationData2[[i]]
+  grlData=grlData[,c(2:4, 6, 7, 9)]
+  colnames(grlData)[4:6]=c("TYPE", "REF", "ALT")
+  grl= makeGRangesFromDataFrame(grlData,
+                                keep.extra.columns=T,
+                                ignore.strand=T,
+                                seqinfo=Seqinfo(genome="hg19"),
+                                seqnames.field="Chromosome",
+                                start.field="Start_Position",
+                                end.field="End_Position",
+                                strand.field="strand",
+                                starts.in.df.are.0based=FALSE)
+  names(grl)=paste0(grlData$Chromosome, ":", grlData$Start_Position, "_", grlData$REF, "/", grlData$ALT)
+  grl$QUAL=NA
+  grl$FILTER="PASS"
+  grl=get_mut_type(grl)
+  ###all SNV
+  gral_allList[[names(mutationData2)[i]]]=grl
+  
+  grlData=gr_to_bed(grl)
+  grlData$name=names(grl)
+  
+  ###ESCC_specificPMD_SNVs
+  grl_data2=bed_intersect(grlData, ESCC_specificPMDs)
+  grl_ESCCspecificPMD=grl[names(grl)%in%grl_data2$name.x,]
+  grl_ESCCspecificPMDList[[names(mutationData2)[i]]]=grl_ESCCspecificPMD
+}
+grl_ESCCspecificPMD_mat <- mut_matrix(vcf_list = grl_ESCCspecificPMDList, ref_genome = ref_genome)
+grl_ESCAsharePMDs_mat <- mut_matrix(vcf_list = grl_ESCAsharePMDsList, ref_genome = ref_genome)
+grl_all_mat <- mut_matrix(vcf_list = gral_allList, ref_genome = ref_genome)
+save(grl_ESCCspecificPMD_mat, grl_all_mat, file="FigureS3G/ESCC_mutation96.RData")
+grl_all_mat2=data.frame("Mutation Types"=rownames(grl_all_mat), grl_all_mat, check.names = F)
+write.table(grl_all_mat2, file="FigureS3G/ESCC_all_mutation.txt", row.names = F, col.names = T, sep="\t", quote=F)
+grl_ESCCspecificPMD_mat2=data.frame("Mutation Types"=rownames(grl_ESCCspecificPMD_mat), grl_ESCCspecificPMD_mat, check.names = F)
+write.table(grl_ESCCspecificPMD_mat2, file="FigureS3G/ESCC_specificPMD_mutation.txt", row.names = F, col.names = T, sep="\t", quote=F)
+
+
+getSigitureSNV=function(mut_mat, signatures, max_delta){
+  mut_mat=mut_mat+0.001
+  fit_res <- fit_to_signatures_strict(mut_mat, signatures, max_delta = max_delta)
+  myPlotdata=fit_res$fit_res$contribution
+  myPlotdata=myPlotdata[rowSums(myPlotdata>0)>=4,]
+  result=as.data.frame(fit_res$fit_res$contribution)
+  return(result)
+}
+signatures = get_known_signatures()
+signatures = signatures[,!colnames(signatures)%in%
+                          c("SBS85", "SBS84","SBS85","SBS86","SBS87","SBS88","SBS89","SBS90")]
+load("FigureS3G/EAC_mutation96.RData")
+EAC_all_mutation_0.05=getSigitureSNV(grl_all_mat, signatures, 0.05)
+EAC_specific_mutation_0.05=getSigitureSNV(grl_EACspecificPMD_mat, signatures, 0.05)
+load("FigureS3G/ESCC_mutation96.RData")
+ESCC_all_mutation_0.05=getSigitureSNV(grl_all_mat, signatures, 0.05)
+ESCC_specific_mutation_0.05=getSigitureSNV(grl_ESCCspecificPMD_mat, signatures, 0.05)
+
+combindResult=function(dataset1, dataset2, dataset3, dataset4, 
+                       dataset1.length, dataset2.length, dataset3.length, dataset4.length,
+                       dataset1.name, dataset2.name, dataset3.name, dataset4.name, saveFile){
+  dataset1_sig=data.frame(dataset1=rowSums(dataset1>0)/ncol(dataset1))
+  dataset2_sig=data.frame(dataset2=rowSums(dataset2>0)/ncol(dataset2))
+  dataset3_sig=data.frame(dataset3=rowSums(dataset3>0)/ncol(dataset3))
+  dataset4_sig=data.frame(dataset4=rowSums(dataset4>0)/ncol(dataset4))
+  mergeSig=cbind(dataset1_sig, dataset2_sig, dataset3_sig, dataset4_sig)
+  colnames(mergeSig)=c(dataset1.name, dataset2.name, dataset3.name, dataset4.name)
+  mergeSig=mergeSig[rowSums(mergeSig<0.1)!=4,]
+  
+  dataset1_TMB= melt(t(dataset1))
+  dataset1_TMB=dataset1_TMB[dataset1_TMB$value>0,]
+  dataset1_TMB=data.frame(dataset1_TMB%>%group_by(Var2)%>%summarise(median(value)))
+  colnames(dataset1_TMB)=c("sig", "dataset1")
+  dataset1_TMB$dataset1=dataset1_TMB$dataset1/dataset1.length*1e6
+  
+  dataset2_TMB= melt(t(dataset2))
+  dataset2_TMB=dataset2_TMB[dataset2_TMB$value>0,]
+  dataset2_TMB=data.frame(dataset2_TMB%>%group_by(Var2)%>%summarise(median(value)))
+  colnames(dataset2_TMB)=c("sig", "dataset2")
+  dataset2_TMB$dataset2=dataset2_TMB$dataset2/dataset2.length*1e6
+  
+  dataset3_TMB= melt(t(dataset3))
+  dataset3_TMB=dataset3_TMB[dataset3_TMB$value>0,]
+  dataset3_TMB=data.frame(dataset3_TMB%>%group_by(Var2)%>%summarise(median(value)))
+  colnames(dataset3_TMB)=c("sig", "dataset3")
+  dataset3_TMB$dataset3=dataset3_TMB$dataset3/dataset3.length*1e6
+  
+  dataset4_TMB= melt(t(dataset4))
+  dataset4_TMB=dataset4_TMB[dataset4_TMB$value>0,]
+  dataset4_TMB=data.frame(dataset4_TMB%>%group_by(Var2)%>%summarise(median(value)))
+  colnames(dataset4_TMB)=c("sig", "dataset4")
+  dataset4_TMB$dataset4=dataset4_TMB$dataset4/dataset4.length*1e6
+  
+  mergeTMB=merge(dataset1_TMB, dataset2_TMB, all=T)
+  mergeTMB=merge(mergeTMB, dataset3_TMB, all=T)
+  mergeTMB=merge(mergeTMB, dataset4_TMB, all=T)
+  rownames(mergeTMB)=mergeTMB$sig
+  mergeTMB=mergeTMB[rownames(mergeSig),]
+  colnames(mergeTMB)[-1]=c(dataset1.name, dataset2.name, dataset3.name, dataset4.name)
+  mergeTMB=melt(mergeTMB, id.vars = "sig")
+  colnames(mergeTMB)=c("sig", "type", "TMB")
+  
+  mergeSig=data.frame(sig=rownames(mergeSig), mergeSig)
+  mergeSig=melt(mergeSig, id.vars = "sig")
+  colnames(mergeSig)=c("sig", "type", "proportion")
+  mergeSig[mergeSig$proportion==0,]$proportion=NA
+  
+  plotdata=merge(mergeTMB, mergeSig)
+  plotdata$TMB_type=NA
+  tmpData=quantile(plotdata$TMB, probs = seq(0, 1, 0.1), na.rm = T)
+  tmpData=round(tmpData, 2)
+  for(i in 2:length(tmpData)){
+    print(i)
+    plotdata[!is.na(plotdata$TMB)&plotdata$TMB>tmpData[[i-1]]&plotdata$TMB<=tmpData[[i]],]$TMB_type=as.character(tmpData[[i]])
+  }
+  plotdata$TMB_type=factor(plotdata$TMB_type, levels=as.character(tmpData))
+  plotdata$sig=factor(plotdata$sig, levels=rev(rownames(dataset1)))
+  plotdata$type=factor(plotdata$type, levels=c(dataset1.name, dataset2.name, dataset3.name, dataset4.name))
+  
+  p=ggplot(plotdata, aes(x=type, y=sig, size = proportion, color=TMB_type)) +
+    geom_point()+scale_size(breaks = seq(0,1,0.1), range = c(1, 12)) +
+    scale_color_manual(name="TMB", values=c("#FFC74E","#FFAA5B","#FF8B68",
+                                            "#FF6A75","#DC6FA5","#AA74D1","#7478FD","#4C68D8","#1A59B1", "#004889"))
+  #    scale_color_manual(name="TMB", values=colorRampPalette(c("#000436","#021EA9","#1632FB","#6E34FC","#C732D5","#FD619D","#FF9965","#FFD32B","#FFFC5A"))(10))
+  #    scale_color_manual(name="TMB", values=colorRampPalette(c("green","blue","red"))(10))
+  
+  
+  p=p+theme_classic()+xlab("")+ylab("")
+  p=p+theme(axis.text.x = element_text(size=12, angle = 30, hjust = 1, color="black"),
+            axis.text.y = element_text(size=12, color="black"))
+  pdf(saveFile, width=5, height=6.5)
+  print(p)
+  dev.off()
+  write.table(plotdata, file=gsub(".pdf", "_data.txt", saveFile), row.names = F, col.names = T, sep="\t", quote=F)
+}
+combindResult(EAC_all_mutation_0.05, EAC_specific_mutation_0.05, ESCC_all_mutation_0.05, ESCC_specific_mutation_0.05,
+              3*1e9, sum(EAC_specificPMDs$end-EAC_specificPMDs$start), 3*1e9, sum(ESCC_specificPMDs$end-ESCC_specificPMDs$start),
+              "EAC_all", "EAC_specificPMD", "ESCC_all", "ESCC_specificPMD", 
+              "FigureS3G/combine.sig.0.05.pdf")
+
 ################################################Figure3AB################################################
 load("meta/TCGA-ESCA_Expression_hg38.v2.RData")
 load("meta/TCGA-ESCA.clinc.RData")
@@ -1552,15 +2079,32 @@ plotBoxplot(ESCCTumor_domainExpResult, "Figure3AB/Figure3B_ESCC.pdf")
 
 
 ################################################Figure3CD################################################
-##using cistrom-GO website
-##EAC specific PMDs (Data/MMSeekR_PMDs/EAC_specificPMDs.bed and EAC down-regulated genes)
-##EAC specific PMDs ("Data/MMSeekR_PMDs/EAC_specificPMDs.bed" and EAC down-regulated genes in "meta/TCGA_ESCCvsEAC.DESeq2.txt")
+load("meta/TCGA_ESCCvsEAC.DESeq2.RData")
+ESCC_EAC_result=ESCC_EAC_result[rowMeans(ESCC_EAC_result[,-1:-8])>0.1,]
+ESCC_EAC_result=ESCC_EAC_result[!is.na(ESCC_EAC_result$padj),]
+ESCC_EAC_result=ESCC_EAC_result[,1:8]
+ESCC_EAC_result=data.frame(GeneID=rownames(ESCC_EAC_result), ESCC_EAC_result)
+write.table(ESCC_EAC_result, file="TCGA_ESCCvsEAC.DESeq2.txt", row.names = F, col.names = T, sep="\t", quote=F)
 
-##ESCC specific PMDs (Data/MMSeekR_PMDs/ESCC_specificPMDs.bed and ESCC down-regulated genes)
+load("meta/TCGA_EACvsNormal.DESeq2.RData")
+EAC_TN_result=EAC_TN_result[rowMeans(EAC_TN_result[,-1:-8])>0.1,]
+EAC_TN_result=EAC_TN_result[!is.na(EAC_TN_result$padj),]
+EAC_TN_result=EAC_TN_result[,1:8]
+EAC_TN_result=data.frame(GeneID=rownames(EAC_TN_result), EAC_TN_result)
+write.table(EAC_TN_result, file="TCGA_EACvsNormal.DESeq2.txt", row.names = F, col.names = T, sep="\t", quote=F)
+
+load("meta/ESCC_Paired_result.RData")
+ESCC_Paired_resuts=ESCC_Paired_resuts[rowMeans(ESCC_Paired_resuts[,3:22])>0.1,]
+ESCC_Paired_resuts=ESCC_Paired_resuts[!is.na(ESCC_Paired_resuts$padj),]
+ESCC_Paired_resuts=ESCC_Paired_resuts[,c(1,25:30,24,23)]
+write.table(ESCC_Paired_resuts, file="ESCCTumorvsNorml.DESeq2.txt", row.names = F, col.names = T, sep="\t", quote=F)
+
+##using cistrom-GO website
+##EAC specific PMDs ("Data/MMSeekR_PMDs/EAC_specificPMDs.bed" and EAC down-regulated genes in "meta/TCGA_ESCCvsEAC.DESeq2.txt")
 ##ESCC specific PMDs ("Data/MMSeekR_PMDs/ESCC_specificPMDs.bed" and ESCC down-regulated genes in "meta/TCGA_ESCCvsEAC.DESeq2.txt")
 
 plotCistomePathway=function(cistromePathwayFile){
-  cistromePathwayResult=read.table(cistromePathwayFile, sep="\t", stringsAsFactors = F, header=F)
+  cistromePathwayResult=read_tsv(cistromePathwayFile, col_names=T)
   colnames(cistromePathwayResult)=c("GO_term", "detail", "enrichment", "pValue", "FDR", "Genes")
   cistromePathwayResult=cistromePathwayResult[order(cistromePathwayResult$FDR),]
   cistromePathwayResult=cistromePathwayResult[cistromePathwayResult$FDR<0.05,]
@@ -1568,7 +2112,7 @@ plotCistomePathway=function(cistromePathwayFile){
   if(nrow(cistromePathwayResult)>15){
     cistromePathwayResult=cistromePathwayResult[1:15,]
   }
-  cistromePathwayResult$GO_term=gsub("\\(.*\\)", "", cistromePathwayResult$GO_term)
+  cistromePathwayResult$GO_term=gsub("\\(.*", "", cistromePathwayResult$GO_term)
   cistromePathwayResult$GO_term=factor(cistromePathwayResult$GO_term, levels=rev(unique(cistromePathwayResult$GO_term)))
   
   p<-ggplot(data=cistromePathwayResult, aes(x=GO_term, y=FDR)) + geom_bar(stat="identity", fill="black")+ coord_flip()+theme_classic()
@@ -1609,12 +2153,15 @@ plotHeaytmap(SLC2A2_regions, "Figure3E/Figure3E_SLC2A2_methylation.pdf")
 
 ################################################Figure3F################################################
 load("meta/TCGA_ESCCvsEAC.DESeq2.RData")
+ESCC_EAC_result=ESCC_EAC_result[rowMeans(ESCC_EAC_result[,-1:-8])>0.1,]
+ESCC_EAC_result=ESCC_EAC_result[!is.na(ESCC_EAC_result$padj),]
+ESCC_EAC_targetResults=ESCC_EAC_result[,c(2,6,7,8)]
+ESCC_EAC_targetResults$GeneID=rownames(ESCC_EAC_targetResults)
+
 geneInformation=read.table("meta/gencode.v22.all.20190716.txt", sep="\t", header=T, stringsAsFactors = F)
 geneInformation=unique(geneInformation[,colnames(geneInformation)%in%c("GeneName","GeneId","Genebiotype")])
 geneInformation$GeneId=gsub("\\.[0-9]*", "", geneInformation$GeneId)
 
-ESCC_EAC_targetResults=ESCC_EAC_result[,c(2,6,7,8)]
-ESCC_EAC_targetResults$GeneID=rownames(ESCC_EAC_targetResults)
 ESCC_EAC_targetResults=merge(ESCC_EAC_targetResults, geneInformation[,c(2,1)], by.x="GeneID", by.y="GeneId")
 write.table(ESCC_EAC_targetResults, "Figure3F/Figure3F.txt", row.names = F, col.names = T, sep="\t", quote=F)
 plotVolcanoPlot=function(plotdata, targets, saveFile){
@@ -1644,18 +2191,15 @@ plotVolcanoPlot=function(plotdata, targets, saveFile){
   print(p)
   dev.off()
 }
-plotVolcanoPlot(ESCC_EAC_targetResults, "SLC2A2", "Figure3F/Figure3F_SLC2A2.pdf")
-plotVolcanoPlot(ESCC_EAC_targetResults, c("KRT71", "KRT74", "KRT72","KRT73", "KRT2", "KRT1", "KRT77", "KRT79", "KRT78"), "Figure3F/Figure3F_KRT.pdf")
-
+plotVolcanoPlot(ESCC_EAC_targetResults, c("SLC2A2", "KRT71", "KRT74", "KRT72","KRT73", "KRT2", "KRT1", "KRT77", "KRT79", "KRT78"), "Figure3F/Figure3F.pdf")
 
 ################################################Figure4A and Figure 4C################################################
 ########Figure4A
 ###analyze ChIP-seq data
-##Mapping: Shell/Figure4A/run.01.bowtie2.IP.sh (Pair-end sample);  Shell/Figure4A/run.01.bowtie2.Input.sh (Singel-end sample)
-##Call peaks and generate the bw file: Shell/Figure4A/run.02macs2H3K36me2.sh
-##Get H3K36me2 signal for PMD regions: getPMDH3K36me2SignalExtend.sh
+##Mapping: Shell/Figure4AC/run.01.bowtie2.Paired.sh (Pair-end sample);  Shell/Figure4AC/run.01.bowtie2.Single.sh (Singel-end sample)
+##Call peaks and generate the bw file: Shell/Figure4AC/run.02macs2H3K36me2.sh
+##Get H3K36me2 signal for PMD regions: Shell/Figure4AC/getPMDH3K36me2SignalExtend.sh
 ###result were in "Data/Figure4A/"
-
 plotHistoneProfileExtend=function(inputFileIndex, ymin, ymax, ylab, main, saveFile){
   sortRegions=read.table(paste0(inputFileIndex, ".extend100k.sort.bed"), sep="\t", stringsAsFactors = F)
   sortRegions=sortRegions[,c(1:4,13)]
@@ -1690,31 +2234,47 @@ plotHistoneProfileExtend=function(inputFileIndex, ymin, ymax, ylab, main, saveFi
   colnames(plotdata)=paste0("V", 1:ncol(deeptoolsHeatmapHeatmap))
   plotdata=data.frame(t(plotdata))
   par(mar = c(3, 5, 2, 2))
-  plot(plotdata[,1], type="l", col = "#0000F5", lwd = 3,axes=F,  xlab="", ylab=ylab, xaxt = "n", 
+  # plot(plotdata[,1], type="l", col = "#0000F5", lwd = 3,axes=F,  xlab="", ylab=ylab, xaxt = "n", 
+  #      ylim=c(ymin, ymax),cex.lab=1.2, cex.axis=1.2)
+  # lines(plotdata[,2], type="l", col = "#EA3323", lwd = 3)
+  # lines(plotdata[,3], type="l", col = "#FF00FD", lwd = 3)
+  # lines(plotdata[,4], type="l", col = "#000000", lwd = 3)
+  plot(plotdata[,1], type="l", col = "#ED1D24", lwd = 3,axes=F,  xlab="", ylab=ylab, xaxt = "n", 
        ylim=c(ymin, ymax),cex.lab=1.2, cex.axis=1.2)
-  lines(plotdata[,2], type="l", col = "#EA3323", lwd = 3)
-  lines(plotdata[,3], type="l", col = "#FF00FD", lwd = 3)
-  lines(plotdata[,4], type="l", col = "#000000", lwd = 3)
+  lines(plotdata[,2], type="l", col = "#0827F5", lwd = 3)
+  lines(plotdata[,3], type="l", col = "#F6BE00", lwd = 3)
+  lines(plotdata[,4], type="l", col = "#00873E", lwd = 3)
+  
   axis(1, c(0,100, 200,300), c("+100kb","start","End","-100kb"), cex.axis=1.3)
   axis(2, cex.axis=1.5)
   title(main=main)
   
+  # legend(10,ymax,legend=c("EAC_specificPMDs","ESCC_specificPMDs","ESCA_sharedPMDs", "ESCA_sharedHMDs"),pch=16,
+  #          col=c("#0000F5","#EA3323","#FF00FD", "#000000"),bty="n", lwd = 4,cex =1.5)
   legend(10,ymax,legend=c("EAC_specificPMDs","ESCC_specificPMDs","ESCA_sharedPMDs", "ESCA_sharedHMDs"),pch=16,
-         col=c("#0000F5","#EA3323","#FF00FD", "#000000"),bty="n", lwd = 4,cex =1.2)
+         col=c("#ED1D24","#0827F5","#F6BE00", "#00873E"),bty="n", lwd = 6,cex =1.5)
   dev.off()
-  colnames(plotdata)=c("EAC_specificPMDs","ESCC_specificPMDs","ESCA_sharedPMDs", "ESCA_sharedHMDs")
   write.table(plotdata, gsub(".pdf", ".txt", saveFile), row.names = F, col.names = T, sep="\t", quote=F)
 }
-plotHistoneProfileExtend("Data/Figure4A/OE19_H3K36me2vsInput.SubtractCPM", 0, 0.1, "H3K36me2 SubtractCPM", "OE19", "Figure4A/Figure4A_OE19.pdf")
-plotHistoneProfileExtend("Data/Figure4A/TE5_H3K36me2vsInput.SubtractCPM", 0, 0.1, "H3K36me2 SubtractCPM", "TE5", "Figure4A/Figure4A_TE5.pdf")
-plotHistoneProfileExtend("Data/Figure4A/KYSE70_H3K36me2vsInput.SubtractCPM", 0, 0.1, "H3K36me2 SubtractCPM", "KYSE70", "Figure4A/Figure4A_KYSE70.pdf")
+plotHistoneProfileExtend("Data/Figure4A/OE19_H3K36me2vsinput.ratio_5k", 0.5, 1.5, "H3K36me2 CPM ratio", "OE19", "Figure4A/Figure4A_OE19.pdf")
+plotHistoneProfileExtend("Data/Figure4A/TE5_H3K36me2vsInput.ratio_5k", 0.5, 1.5, "H3K36me2 CPM ratio", "TE5", "Figure4A/Figure4A_TE5.pdf")
+plotHistoneProfileExtend("Data/Figure4A/KYSE70_H3K36me2vsInput.ratio_5k", 0.5, 1.5, "H3K36me2 CPM ratio", "KYSE70", "Figure4A/Figure4A_KYSE70.pdf")
 
 ########Figure4C
-###bw file were downloaded form GSE14967033
-plotHistoneProfileExtend("Data/Figure4C/GSM4508622_Cal27.H3K36me2.10kb.norm", 0, 5, "H3K36me2 signal", "Cal27", "Figure4C/Figure4C_Cal27.pdf")
-plotHistoneProfileExtend("Data/Figure4C/GSM4508640_Det562.H3K36me2.10kb.norm",0, 5, "H3K36me2 signal", "Det562", "Figure4C/Figure4C_Det562.pdf")
-plotHistoneProfileExtend("Data/Figure4C//GSM4508664_FaDu.H3K36me2.10kb.norm", 0, 7, "H3K36me2 signal", "FaDu", "Figure4C/Figure4C_FaDu.pdf")
-
+#SRR11657281	 Cal27_H3K36me2 https://sra-pub-run-odp.s3.amazonaws.com/sra/SRR11657281/SRR11657281
+#SRR11657285  Cal27_Input    https://sra-pub-run-odp.s3.amazonaws.com/sra/SRR11657285/SRR11657285
+#SRR11657318	 Det562_Input   https://sra-pub-run-odp.s3.amazonaws.com/sra/SRR11657318/SRR11657318
+#SRR11657314  Det562_H3K36me2 https://sra-pub-run-odp.s3.amazonaws.com/sra/SRR11657314/SRR11657314
+#SRR11657346  FaDu_H3K36me2   https://sra-pub-run-odp.s3.amazonaws.com/sra/SRR11657346/SRR11657346
+#SRR11657348  FaDu_Input     https://sra-pub-run-odp.s3.amazonaws.com/sra/SRR11657348/SRR11657348
+###analyze ChIP-seq data
+##Mapping: Shell/Figure4AC/run.01.bowtie2.Single.sh (Singel-end sample)
+##Call peaks and generate the bw file: Shell/Figure4AC/run.02macs2H3K36me2.sh
+##Get H3K36me2 signal for PMD regions: Shell/Figure4AC/getPMDH3K36me2SignalExtend.sh
+###result were in "Data/Figure4C/
+plotHistoneProfileExtend("Data/Figure4C/Cal27_H3K36me2vsinput.ratio_5k", 0.5, 1.5, "H3K36me2 CPM ratio", "Cal27", "Figure4C/Figure4C_Cal27.pdf")
+plotHistoneProfileExtend("Data/Figure4C/Det562_H3K36me2vsinput.ratio_5k", 0.5, 1.5, "H3K36me2 CPM ratio", "Det562", "Figure4C/Figure4C_Det562.pdf")
+plotHistoneProfileExtend("Data/Figure4C/FaDu_H3K36me2vsinput.ratio_5k", 0.5, 1.5, "H3K36me2 CPM ratio", "FaDu", "Figure4C/Figure4C_FaDu.pdf")
 
 #########################################################################################################################
 #########################################################################################################################
@@ -2123,11 +2683,11 @@ plotAllDMRMethylationDefaultOrder=function(dataMatrix){
                          show_rownames = F, show_colnames = T, cluster_rows = F, cluster_cols = F,na_col="white")
   return(resultHeatmap)
 }
-plotTargetDeltaHeatmap2=function(dataMatrix){
+plotTargetDeltaHeatmap2=function(dataMatrix, ylim){
   plotdata=data.frame(delta=dataMatrix)
   colnames(plotdata)="delta"
   plotdata$order=nrow(plotdata):1
-  p=ggplot(plotdata,aes(x=order,y=delta))+geom_bar(stat="identity",width=1)+ylim(-0.5, 0.5)+theme_classic()+ylab("")+xlab("")
+  p=ggplot(plotdata,aes(x=order,y=delta))+geom_bar(stat="identity",width=1)+ylim(-ylim, ylim)+theme_classic()+ylab("")+xlab("")
   p=p+ coord_flip()
   return(p)
 }
@@ -2173,18 +2733,133 @@ plotTumorSpecificDMRsHeatmap=function(dataMatrix, hypogroupBetaMatrix_Ttest, typ
   write.table(deltaMean, gsub(".pdf", "_deltaMean.txt", saveFile), quote=F, row.names = F, col.names = T, sep="\t")
 }
 plotTumorSpecificDMRsHeatmap(hypogroup1BetaMatrix, hypogroup1BetaMatrix_Ttest, sampleType1, "GEJ_Nonmalignant", "Figure6A/Figure6A.heatmap.pdf")
-plotTumorSpecificDMRsHeatmap(hypogroup2BetaMatrix, hypogroup2BetaMatrix_Ttest, sampleType2, "ESCC_Nonmalignant", "FigureS4A/FigureS4A.heatmap.pdf")
+plotTumorSpecificDMRsHeatmap(hypogroup2BetaMatrix, hypogroup2BetaMatrix_Ttest, sampleType2, "ESCC_Nonmalignant", "FigureS5A/FigureS5A.heatmap.pdf")
 
 nonSpecific_hypoEAC=hypoGroup1[!hypoGroup1$DMR%in%rownames(hypogroup1BetaMatrix_Ttest[hypogroup1BetaMatrix_Ttest$lessFDR<0.05,]),1:3]
 nonSpecific_hypoESCC=hypoGroup2[!hypoGroup2$DMR%in%rownames(hypogroup2BetaMatrix_Ttest[hypogroup2BetaMatrix_Ttest$lessFDR<0.05,]),1:3]
 write.table(nonSpecific_hypoEAC, file=paste("Data/MaskUnionPMDs_DMRs/nonSpecific_hypo_",group1Name, ".bed", sep=""), quote=F, sep="\t", row.names = F, col.names = F)
 write.table(nonSpecific_hypoESCC, file=paste("Data/MaskUnionPMDs_DMRs/nonSpecific_hypo_",group2Name, ".bed", sep=""), quote=F, sep="\t", row.names = F, col.names = F)
 
-########################################################FigureS3C#####################################################
+#########################################################FigureS6#####################
+hypergroup1BetaMatrix=hypogroup2BetaMatrix
+hypergroup2BetaMatrix=hypogroup1BetaMatrix
+hypergroup1BetaMatrix_Ttest=calculatePvalue(hypergroup1BetaMatrix, sampleType1, "GEJ_Nonmalignant")
+hypergroup2BetaMatrix_Ttest=calculatePvalue(hypergroup2BetaMatrix, sampleType2, "ESCC_Nonmalignant")
+
+plotTumorSpecificDMRsHeatmap2=function(dataMatrix, hypergroupBetaMatrix_Ttest, type1, type2, saveFile){
+  type1Mean=rowMeans(dataMatrix[,colnames(dataMatrix)%in%rownames(annotation_col[annotation_col$Type%in%type1,])], na.rm = T)
+  type2Mean=rowMeans(dataMatrix[,colnames(dataMatrix)%in%rownames(annotation_col[annotation_col$Type%in%type2,])], na.rm = T)
+  deltaMean=type1Mean-type2Mean
+  deltaMean=data.frame(mean=deltaMean)
+  deltaMean=deltaMean[order(deltaMean$mean,decreasing = T),,drop=F]
+  rowOrder=factor(rownames(dataMatrix), levels=rownames(deltaMean))
+  dataMatrix=dataMatrix[order(rowOrder),]
+  
+  FDRData=hypergroupBetaMatrix_Ttest[,c(3,4)]
+  FDRData$lessFDRType=0
+  FDRData[FDRData$lessFDR<0.05,]$lessFDRType=1
+  FDRData$greatFDRType=0
+  FDRData[FDRData$greatFDR<0.05,]$greatFDRType=1
+  FDRData=FDRData[order(rowOrder),]
+  print(nrow(FDRData[FDRData$greatFDRType==1,]))
+  
+  heatmapResult=plotAllDMRMethylationDefaultOrder(dataMatrix)
+  deltaHeatmap=plotTargetDeltaHeatmap2(deltaMean, 1)
+  fdrHeatmap=plotFDRHeatmap(FDRData[,4,drop=F])
+  dev.off()
+  plot_list=list()
+  plot_list[[1]]=deltaHeatmap
+  plot_list[[2]]=fdrHeatmap[[4]]
+  plot_list[[3]]=heatmapResult[[4]]
+  pdf(saveFile, width = 12, height=8)
+  print(grid.arrange(arrangeGrob(grobs= plot_list, widths = c(2.5/20,2.5/20, 7/10), ncol=3)))
+  dev.off()
+  
+  dataMatrix=data.frame(region=rownames(dataMatrix), dataMatrix)
+  write.table(dataMatrix, gsub(".pdf", "_matrix.txt", saveFile), quote=F, row.names = F, col.names = T, sep="\t")
+  FDRData=data.frame(region=rownames(FDRData), FDRData)
+  write.table(FDRData, gsub(".pdf", "_fdr.txt", saveFile), quote=F, row.names = F, col.names = T, sep="\t")
+  deltaMean=data.frame(region=rownames(deltaMean), deltaMean)
+  write.table(deltaMean, gsub(".pdf", "_deltaMean.txt", saveFile), quote=F, row.names = F, col.names = T, sep="\t")
+}
+plotTumorSpecificDMRsHeatmap2(hypergroup1BetaMatrix, hypergroup1BetaMatrix_Ttest, sampleType1, "GEJ_Nonmalignant", "FigureS6/FigureS6A.EACTumor_tsDMRS.hyper.heatmap.pdf")
+plotTumorSpecificDMRsHeatmap2(hypergroup2BetaMatrix, hypergroup2BetaMatrix_Ttest, sampleType2, "ESCC_Nonmalignant", "FigureS6/FigureS6B.ESCCTumor_tsDMRS.hyper.heatmap.pdf")
+
+specific_hyperEAC=hypoGroup2[hypoGroup2$DMR%in%rownames(hypergroup1BetaMatrix_Ttest[hypergroup1BetaMatrix_Ttest$greatFDR<0.05,]),1:3]
+specific_hyperESCC=hypoGroup1[hypoGroup1$DMR%in%rownames(hypergroup2BetaMatrix_Ttest[hypergroup2BetaMatrix_Ttest$greatFDR<0.05,]),1:3]
+write.table(specific_hyperEAC, file="FigureS6/specific_hyperEAC_Tumor.bed", quote=F, sep="\t", row.names = F, col.names = F)
+write.table(specific_hyperESCC, file="FigureS6/specific_hyperESCC_Tumor.bed", quote=F, sep="\t", row.names = F, col.names = F)
+
+#####FigureS6C
+#./Figure2_annot_motifs_pathway/runAnnot.sh FigureS6/specific_hyperEAC_Tumor.bed
+#./Figure2_annot_motifs_pathway/runAnnot.sh FigureS6/specific_hyperESCC_Tumor.bed
+
+annotFileList=dir("FigureS6/", pattern=".annot.gene.txt", full=T)
+for(file in annotFileList){
+  annotData=read_tsv(file)
+  fileName=gsub(".annot.gene.txt", "", basename(file))
+  colnames(annotData)[1]="PeakID"
+  annotData=as.data.frame(annotData[,colnames(annotData)%in%c("PeakID", "Annotation")])
+  annotData$Annotation=gsub(" \\(.*", "", annotData$Annotation)
+  annotData[annotData$Annotation%in%c("5' UTR","3' UTR", "TTS"),]$Annotation="exon"
+  
+  annotData$Annotation=factor(annotData$Annotation, levels=c("promoter-TSS", "exon", "intron", "Intergenic", "non-coding"))
+  plotdata=as.data.frame(table(annotData$Annotation))
+  colnames(plotdata)=c("Type", "Number")
+  plotdata$Type=factor(plotdata$Type, levels=as.character(plotdata$Type))
+  plotdata$Ratio=plotdata$Number/sum(plotdata$Number)
+  plotdata=plotdata[,c(1,3)]
+  colnames(plotdata)=c("Type", fileName)
+  if(file==annotFileList[1]){
+    result=plotdata
+  }else{
+    result=merge(result, plotdata, by.x="Type", by.y="Type", all=T)
+  }
+}
+result[is.na(result)]=0
+colnames(result)=c("Type","tshyperEAC", "tshyperESCC")
+result=melt(result, id.vars = "Type")
+colnames(result)=c("Type", "Sample", "Ratio")
+p<-ggplot(data=result, aes(x=Sample, y=Ratio, fill=Type)) + geom_bar(stat="identity", width = 0.7)
+p=p+ylab("Ratio")+xlab("")
+p=p+theme_classic()
+pdf("FigureS6/FigureS6C.pdf", width=4, height=4)
+print(p)
+dev.off()
+write.table(result, file="FigureS6/FigureS6C_data.txt", row.names = F, col.names = T, sep="\t", quote=F)
+
+#####FigureS6DE
+##specific_hypo_EAC DMRs ("FigureS6/specific_hyperEAC_Tumor.bed" and EAC-downregulated genes in "meta/TCGA_EACvsNormal.DESeq2.txt")
+##specific_hypo_ESCC DMRs ("FigureS6/specific_hyperESCC_Tumor.bed" and ESCC downregulated genes in "meta/ESCCTumorvsNorml.DESeq2.txt")
+plotCistomePathway=function(cistromePathwayFile, FDRcutoff, saveFile){
+  cistromePathwayResult=read_tsv(cistromePathwayFile)
+  colnames(cistromePathwayResult)=c("GO_term", "detail", "enrichment", "pValue", "FDR", "Genes")
+  cistromePathwayResult=cistromePathwayResult[order(cistromePathwayResult$FDR),]
+  cistromePathwayResult=cistromePathwayResult[cistromePathwayResult$FDR<FDRcutoff,]
+  cistromePathwayResult$FDR=-log10(cistromePathwayResult$FDR)
+  if(nrow(cistromePathwayResult)>15){
+    cistromePathwayResult=cistromePathwayResult[1:15,]
+  }
+  cistromePathwayResult$GO_term=gsub("\\(.*\\)", "", cistromePathwayResult$GO_term)
+  cistromePathwayResult$GO_term=factor(cistromePathwayResult$GO_term, levels=rev(unique(cistromePathwayResult$GO_term)))
+  
+  p<-ggplot(data=cistromePathwayResult, aes(x=GO_term, y=FDR)) + geom_bar(stat="identity", fill="black")+ coord_flip()+theme_classic()
+  p=p+ylab("-log10(FDR)")+xlab("")
+  p=p+theme(axis.text = element_text(colour = "black"))
+  pdf(saveFile,width=10, height=2+nrow(cistromePathwayResult)/5)
+  print(p)
+  dev.off()
+  write.table(cistromePathwayResult, file=gsub(".pdf", "_data.txt", saveFile), row.names = F, 
+              col.names = T, sep="\t", quote=F)
+}
+plotCistomePathway("FigureS6/specific_hyperEAC_Tumor_CistromeGO_go_bp_result.txt", 0.05, "FigureS6/FigureS6D.pdf")
+plotCistomePathway("FigureS6/specific_hyperESCC_Tumor_CistromeGO_go_bp_result.txt", 0.1, "FigureS6/FigureS6E.pdf")
+
+########################################################FigureS4C#####################################################
 ##get mean methylation after masking unionPMDs
-###./Shell/FigureS3C/getRemovePMDsMeanBetaValues.sh
-##merge results into "FigureS3C/Methylation_maskedUnionPMDs.txt"
-colorInfo=read.table("FigureS3C/Methylation_maskedUnionPMDs.txt", sep="\t", stringsAsFactors = F, header=T)
+###./Shell/FigureS4C/getRemovePMDsMeanBetaValues.sh
+##merge results into "FigureS4C/Methylation_maskedUnionPMDs.txt"
+colorInfo=read.table("FigureS4C/Methylation_maskedUnionPMDs.txt", sep="\t", stringsAsFactors = F, header=T)
 plotPCA2=function(plotdata,annotation_col, colorInfo1, saveFile){
   plotdata=t(plotdata)
   pca <- prcomp(plotdata,scale = TRUE)
@@ -2227,30 +2902,30 @@ plotdata=betaMatrix_cov7
 rowVar=rowVars(as.matrix(plotdata[,-1:-3]))
 plotdata=plotdata[order(rowVar,decreasing = T),]
 plotdata2=plotdata[1:8000,-1:-3]
-plotPCA2(plotdata2, annotation_col, colorInfo, "FigureS3C/FigureS3C.pdf")
+plotPCA2(plotdata2, annotation_col, colorInfo, "FigureS4C/FigureS4C.pdf")
 
 ########################################################Figure5B, 6B, S3F, S4B##############################################
 ###get background
-##Rscript Shell/Figure5B_6B_S3F_S4B/getBackground2.R Data/MaskUnionPMDs_DMRs/hypoEAC_Tumor.bed 10
-##Rscript Shell/Figure5B_6B_S3F_S4B/getBackground2.R Data/MaskUnionPMDs_DMRs/hypoESCC_Tumor.bed 10
-##Rscript Shell/Figure5B_6B_S3F_S4B/getBackground2.R Data/MaskUnionPMDs_DMRs/specific_hypo_EAC_Tumor.bed 10
-##Rscript Shell/Figure5B_6B_S3F_S4B/getBackground2.R Data/MaskUnionPMDs_DMRs/specific_hypo_ESCC_Tumor.bed 10
-##Rscript Shell/Figure5B_6B_S3F_S4B/getBackground2.R Data/MaskUnionPMDs_DMRs/nonSpecific_hypo_EAC_Tumor.bed 10
-##Rscript Shell/Figure5B_6B_S3F_S4B/getBackground2.R Data/MaskUnionPMDs_DMRs/nonSpecific_hypo_ESCC_Tumor.bed 10
+##Rscript Shell/Figure5B_6B_S4F_S5B/getBackground2.R Data/MaskUnionPMDs_DMRs/hypoEAC_Tumor.bed 10
+##Rscript Shell/Figure5B_6B_S4F_S5B/getBackground2.R Data/MaskUnionPMDs_DMRs/hypoESCC_Tumor.bed 10
+##Rscript Shell/Figure5B_6B_S4F_S5B/getBackground2.R Data/MaskUnionPMDs_DMRs/specific_hypo_EAC_Tumor.bed 10
+##Rscript Shell/Figure5B_6B_S4F_S5B/getBackground2.R Data/MaskUnionPMDs_DMRs/specific_hypo_ESCC_Tumor.bed 10
+##Rscript Shell/Figure5B_6B_S4F_S5B/getBackground2.R Data/MaskUnionPMDs_DMRs/nonSpecific_hypo_EAC_Tumor.bed 10
+##Rscript Shell/Figure5B_6B_S4F_S5B/getBackground2.R Data/MaskUnionPMDs_DMRs/nonSpecific_hypo_ESCC_Tumor.bed 10
 
-####annot by homoer
-#./Shell/Figure5B_6B_S3F_S4B/runAnnot.sh Data/MaskUnionPMDs_DMRs/hypoEAC_Tumor.bed
-#./Shell/Figure5B_6B_S3F_S4B/runAnnot.sh Data/MaskUnionPMDs_DMRs/hypoEAC_Tumor.BackgroundMotif.10X.bed
-#./Shell/Figure5B_6B_S3F_S4B/runAnnot.sh Data/MaskUnionPMDs_DMRs/hypoESCC_Tumor.ned
-#./Shell/Figure5B_6B_S3F_S4B/runAnnot.sh Data/MaskUnionPMDs_DMRs/hypoESCC_Tumor.BackgroundMotif.10X.bed
-#./Shell/Figure5B_6B_S3F_S4B/runAnnot.sh Data/MaskUnionPMDs_DMRs/specific_hypo_EAC_Tumor.bed
-#./Shell/Figure5B_6B_S3F_S4B/runAnnot.sh Data/MaskUnionPMDs_DMRs/specific_hypo_EAC_Tumor.BackgroundMotif.10X.bed
-#./Shell/Figure5B_6B_S3F_S4B/runAnnot.sh Data/MaskUnionPMDs_DMRs/specific_hypo_ESCC_Tumor.bed
-#./Shell/Figure5B_6B_S3F_S4B/runAnnot.sh Data/MaskUnionPMDs_DMRs/specific_hypo_ESCC_Tumor.BackgroundMotif.10X.bed
-#./Shell/Figure5B_6B_S3F_S4B/runAnnot.sh Data/MaskUnionPMDs_DMRs/nonSpecific_hypo_EAC_Tumor.bed
-#./Shell/Figure5B_6B_S3F_S4B/runAnnot.sh Data/MaskUnionPMDs_DMRs/nonSpecific_hypo_ESCC_Tumor.bed
+####annot by homer
+#./Shell/Figure5B_6B_S4F_S5B/runAnnot.sh Data/MaskUnionPMDs_DMRs/hypoEAC_Tumor.bed
+#./Shell/Figure5B_6B_S4F_S5B/runAnnot.sh Data/MaskUnionPMDs_DMRs/hypoEAC_Tumor.BackgroundMotif.10X.bed
+#./Shell/Figure5B_6B_S4F_S5B/runAnnot.sh Data/MaskUnionPMDs_DMRs/hypoESCC_Tumor.ned
+#./Shell/Figure5B_6B_S4F_S5B/runAnnot.sh Data/MaskUnionPMDs_DMRs/hypoESCC_Tumor.BackgroundMotif.10X.bed
+#./Shell/Figure5B_6B_S4F_S5B/runAnnot.sh Data/MaskUnionPMDs_DMRs/specific_hypo_EAC_Tumor.bed
+#./Shell/Figure5B_6B_S4F_S5B/runAnnot.sh Data/MaskUnionPMDs_DMRs/specific_hypo_EAC_Tumor.BackgroundMotif.10X.bed
+#./Shell/Figure5B_6B_S4F_S5B/runAnnot.sh Data/MaskUnionPMDs_DMRs/specific_hypo_ESCC_Tumor.bed
+#./Shell/Figure5B_6B_S4F_S5B/runAnnot.sh Data/MaskUnionPMDs_DMRs/specific_hypo_ESCC_Tumor.BackgroundMotif.10X.bed
+#./Shell/Figure5B_6B_S4F_S5B/runAnnot.sh Data/MaskUnionPMDs_DMRs/nonSpecific_hypo_EAC_Tumor.bed
+#./Shell/Figure5B_6B_S4F_S5B/runAnnot.sh Data/MaskUnionPMDs_DMRs/nonSpecific_hypo_ESCC_Tumor.bed
 
-annotFileList=dir("Data/Figure5B_6B_S3F_S4B/", pattern=".annot.gene.txt", full=T)
+annotFileList=dir("Data/Figure5B_6B_S4F_S5B/", pattern=".annot.gene.txt", full=T)
 for(file in annotFileList){
   annotData=read_tsv(file)
   fileName=gsub(".annot.gene.txt", "", basename(file))
@@ -2296,42 +2971,42 @@ result1=result[result$Sample%in%c("hypoEAC","hypoESCC"),]
 p<-ggplot(data=result1, aes(x=Sample, y=Ratio, fill=Type)) + geom_bar(stat="identity", width = 0.7)
 p=p+ylab("Ratio")+xlab("")+scale_fill_manual(values=c("#E41A1C", "#984EA3", "#4DAF4A", "#377EB8", "#E76BF3"))
 p=p+theme_classic()
-pdf("Figure5B_6B_S3F_S4B/Figure5B_hypoDMR.pdf", height=4, width=4)
+pdf("Figure5B_6B_S4F_S5B/Figure5B_hypoDMR.pdf", height=4, width=4)
 print(p)
 dev.off()
-write.table(result1, "Figure5B_6B_S3F_S4B/Figure5B_hypoDMR.txt", row.names = F, col.names = T, sep="\t", quote=F)
+write.table(result1, "Figure5B_6B_S4F_S5B/Figure5B_hypoDMR.txt", row.names = F, col.names = T, sep="\t", quote=F)
 
 ###Figure 6B
 result2=result[result$Sample%in%c("tshypoEAC","tshypoESCC"),]
 p<-ggplot(data=result2, aes(x=Sample, y=Ratio, fill=Type)) + geom_bar(stat="identity", width = 0.7)
 p=p+ylab("Ratio")+xlab("")+scale_fill_manual(values=c("#E41A1C", "#984EA3", "#4DAF4A", "#377EB8", "#E76BF3"))
 p=p+theme_classic()
-pdf("Figure5B_6B_S3F_S4B/Figure6B_tshypoDMR.pdf", height=4, width=4)
+pdf("Figure5B_6B_S4F_S5B/Figure6B_tshypoDMR.pdf", height=4, width=4)
 print(p)
 dev.off()
-write.table(result1, "Figure5B_6B_S3F_S4B/Figure6B_tshypoDMR.txt", row.names = F, col.names = T, sep="\t", quote=F)
+write.table(result1, "Figure5B_6B_S4F_S5B/Figure6B_tshypoDMR.txt", row.names = F, col.names = T, sep="\t", quote=F)
 
-###FigureS3F
+###FigureS4F
 result3=result[result$Sample%in%c("hypoEAC.Back.Nicole","hypoESCC.Back.Nicole"),]
 p<-ggplot(data=result3, aes(x=Sample, y=Ratio, fill=Type)) + geom_bar(stat="identity", width = 0.7)
 p=p+ylab("Ratio")+xlab("")+scale_fill_manual(values=c("#E41A1C", "#984EA3", "#4DAF4A", "#377EB8", "#E76BF3"))
 p=p+theme_classic()
-pdf("Figure5B_6B_S3F_S4B/FigureS3F_tshypoDMR.pdf", height=4, width=4)
+pdf("Figure5B_6B_S4F_S5B/FigureS4F_hypoDMR_background.pdf", height=4, width=4)
 print(p)
 dev.off()
-write.table(result1, "Figure5B_6B_S3F_S4B/FigureS3F_tshypoDMR.txt", row.names = F, col.names = T, sep="\t", quote=F)
+write.table(result1, "Figure5B_6B_S4F_S5B/FigureS4F_hypoDMR_background.txt", row.names = F, col.names = T, sep="\t", quote=F)
 
-###FigureS4B
+###FigureS5B
 result4=result[result$Sample%in%c("tshypoEAC.Back.Nicole","tshypoESCC.Back.Nicole"),]
 p<-ggplot(data=result4, aes(x=Sample, y=Ratio, fill=Type)) + geom_bar(stat="identity", width = 0.7)
 p=p+ylab("Ratio")+xlab("")+scale_fill_manual(values=c("#E41A1C", "#984EA3", "#4DAF4A", "#377EB8", "#E76BF3"))
 p=p+theme_classic()
-pdf("Figure5B_6B_S3F_S4B/FigureS4B_tshypoDMR.pdf", height=4, width=4)
+pdf("Figure5B_6B_S4F_S5B/FigureS6B_tshypoDMR_background.pdf", height=4, width=4)
 print(p)
 dev.off()
-write.table(result4, "Figure5B_6B_S3F_S4B/FigureS4B_tshypoDMR.txt", row.names = F, col.names = T, sep="\t", quote=F)
+write.table(result4, "Figure5B_6B_S4F_S5B/FigureS5B_tshypoDMR_background.txt", row.names = F, col.names = T, sep="\t", quote=F)
 
-###Figure2B length####
+###Figure5B length####
 getDMRLength=function(file){
   peakData=read.table(file)
   peakData$width=peakData$V3-peakData$V2
@@ -2354,17 +3029,17 @@ p = p + theme( plot.title = element_text(size = 16, face = "bold",hjust = 0.5),
                axis.line = element_line(size=0.5, colour = "black"),
                legend.title = element_text(face="bold",size=14),
                legend.text = element_text(colour="black", size = 12))
-pdf("Figure5B_6B_S3F_S4B/Figure2B_length.pdf",height=4, width=5)
+pdf("Figure5B_6B_S4F_S5B/Figure5B_length.pdf",height=4, width=5)
 print(p)
 dev.off()
-write.table(plotdata, file="Figure5B_6B_S3F_S4B/Figure2B_length.txt", row.names = F, col.names = T, sep="\t", quote=F)
+write.table(plotdata, file="Figure5B_6B_S4F_S5B/Figure5B_length.txt", row.names = F, col.names = T, sep="\t", quote=F)
 
-########################################################Figure5CD and S3GH##############################################
-#./Shell/Figure5CD_S3GH/run.plotheatmapTCGA_ATAC.sh tumor_hypoDMRs Data/Figure5CD_S3GH/
-#./Shell/Figure5CD_S3GH/run.plotheatmapTCGA_ATAC.sh tumor_hypoDMRs_background10X Data/Figure5CD_S3GH/
+########################################################Figure5CD and S4GH##############################################
+#./Shell/Figure5CD_S4GH/run.plotheatmapTCGA_ATAC.sh tumor_hypoDMRs Data/Figure5CD_S4GH/
+#./Shell/Figure5CD_S4GH/run.plotheatmapTCGA_ATAC.sh tumor_hypoDMRs_background10X Data/Figure5CD_S4GH/
 
-#./Shell/Figure5CD_S3GH/run.plotheatmapESCACellsH3K27ac.sh tumor_hypoDMRs Data/Figure5CD_S3GH/
-#./Shell/Figure5CD_S3GH/run.plotheatmapESCACellsH3K27ac.sh tumor_hypoDMRs_background10X Data/Figure5CD_S3GH/
+#./Shell/Figure5CD_S4GH/run.plotheatmapESCACellsH3K27ac.sh tumor_hypoDMRs Data/Figure5CD_S4GH/
+#./Shell/Figure5CD_S4GH/run.plotheatmapESCACellsH3K27ac.sh tumor_hypoDMRs_background10X Data/Figure5CD_S4GH/
 
 plotProfile2=function(fileName, title, ysize, saveFile){
   deeptoolsHeatmapHeatmap=read.table(fileName, nrows=1, comment.char ="",stringsAsFactors = F)
@@ -2439,10 +3114,10 @@ plotProfile2=function(fileName, title, ysize, saveFile){
   print(p)
   dev.off()
 }
-plotProfile2("Data/Figure5CD_S3GH/tumor_hypoDMRs.TCGA_ATAC.pValue.tab",  "ATACseq", 22, "Figure5CD_S3GH/Figure5CD.DMR_ATAC.pdf")
-plotProfile2("Data/Figure5CD_S3GH/tumor_hypoDMRs_background10X.TCGA_ATAC.pValue.tab", "ATACseq", 22, "Figure5CD_S3GH/Figure5CD.DMR_background_ATAC.pdf")
-plotProfile2("Data/Figure5CD_S3GH/tumor_hypoDMRs.ESCACellsH3K27ac.SubtractCPM.tab", "Cell_line", 0.12, "Figure5CD_S3GH/FigureS3GH_cellH3K27ac.pdf")
-plotProfile2("Data/Figure5CD_S3GH/tumor_hypoDMRs_background10X.ESCACellsH3K27ac.SubtractCPM.tab", "Cell_line", 0.12, "Figure5CD_S3GH/FigureS3GH_cellH3K27ac_background.pdf")
+plotProfile2("Data/Figure5CD_S4GH/tumor_hypoDMRs.TCGA_ATAC.pValue.tab",  "ATACseq", 22, "Figure5CD_S4GH/Figure5CD.DMR_ATAC.pdf")
+plotProfile2("Data/Figure5CD_S4GH/tumor_hypoDMRs_background10X.TCGA_ATAC.pValue.tab", "ATACseq", 22, "Figure5CD_S4GH/Figure5CD.DMR_background_ATAC.pdf")
+plotProfile2("Data/Figure5CD_S4GH/tumor_hypoDMRs.ESCACellsH3K27ac.SubtractCPM.tab", "Cell_line", 0.12, "Figure5CD_S4GH/FigureS4GH_cellH3K27ac.pdf")
+plotProfile2("Data/Figure5CD_S4GH/tumor_hypoDMRs_background10X.ESCACellsH3K27ac.SubtractCPM.tab", "Cell_line", 0.12, "Figure5CD_S4GH/FigureS4GH_cellH3K27ac_background.pdf")
 
 ########################################################Figure5EF and Figure6CD##############################################
 ##using cistrom-GO website
@@ -2452,7 +3127,7 @@ plotProfile2("Data/Figure5CD_S3GH/tumor_hypoDMRs_background10X.ESCACellsH3K27ac.
 ##specific_hypo_ESCC DMRs ("Data/MaskUnionPMDs_DMRs/specific_hypo_ESCC_Tumor.bed" and ESCC up-regulated genes in "meta/ESCCTumorvsNorml.DESeq2.txt")
 
 plotCistomePathway=function(cistromePathwayFile, saveFile){
-  cistromePathwayResult=read.table(cistromePathwayFile, sep="\t", stringsAsFactors = F, header=F)
+  cistromePathwayResult=read_tsv(cistromePathwayFile)
   colnames(cistromePathwayResult)=c("GO_term", "detail", "enrichment", "pValue", "FDR", "Genes")
   cistromePathwayResult=cistromePathwayResult[order(cistromePathwayResult$FDR),]
   cistromePathwayResult=cistromePathwayResult[cistromePathwayResult$FDR<0.05,]
@@ -2581,7 +3256,7 @@ TFValidation=function(fileName, TF, outputPath, motifAnnotFile, tfPeakFile){
   pheatmap(test1, cluster_rows = F, cluster_cols = F, show_rownames = F, show_colnames = F, breaks = breakList, 
            color = colorRampPalette(c("#FFF5F0", "red"))(n = length(breakList)))
   dev.off()
-  write.table(test1, paste0("Data/",outputPath, TF, "_signal.txt"), row.names = F, col.names = F, sep="\t", quote=F)
+  write.table(test1, paste0(outputPath, TF, "_signal.txt"), row.names = F, col.names = F, sep="\t", quote=F)
   test1=colMeans(test1, na.rm=T)
   
   test2=deeptoolsHeatmapHeatmap[,101:200]
@@ -2590,7 +3265,7 @@ TFValidation=function(fileName, TF, outputPath, motifAnnotFile, tfPeakFile){
   pheatmap(test2, cluster_rows = F, cluster_cols = F, show_rownames = F, show_colnames = F, breaks = breakList,
            color = colorRampPalette(c("#FFF5F0", "red"))(n = length(breakList)))
   dev.off()
-  write.table(test2, paste0("Data/",outputPath, "_H3K27ac_signal.txt"), row.names = F, col.names = F, sep="\t", quote=F)
+  write.table(test2, paste0(outputPath, "_H3K27ac_signal.txt"), row.names = F, col.names = F, sep="\t", quote=F)
   test2=colMeans(test2, na.rm=T)
   
   test3=deeptoolsHeatmapHeatmap[,201:300]
@@ -2625,6 +3300,18 @@ TFValidation=function(fileName, TF, outputPath, motifAnnotFile, tfPeakFile){
       }
     }
   }
+  
+  ###review
+  tmp=matrixData[,1401:1600]
+  tmp=rowSums(tmp)
+  tmpChoose=tmp[tmp>10]
+  tmpChoose=data.frame(number=tmpChoose)
+  tmpChoose$chrom=gsub(":.*", "", rownames(tmpChoose))
+  tmpChoose$start=as.numeric(gsub("-.*", "", gsub(".*:", "", rownames(tmpChoose))))
+  tmpChoose$end=as.numeric(gsub(".*-", "", rownames(tmpChoose)))
+  tmpChoose$start=tmpChoose$start-100
+  tmpChoose$end=tmpChoose$end+100
+  
   matrixData2=matrix(rep(0, (3000/30)*nrow(matrixData)),ncol=100, nrow=nrow(matrixData))
   for(i in 1:nrow(matrixData)){
     for(j in 1:100){
@@ -2638,8 +3325,8 @@ TFValidation=function(fileName, TF, outputPath, motifAnnotFile, tfPeakFile){
   rowOrder=factor(rownames(matrixData2), levels=sortBed$V4)
   matrixData2=matrixData2[order(rowOrder),]
   png(paste0(outputPath, TF, "_motif.png"),res=300, width=500, height=1000)
-  pheatmap(matrixData2, cluster_rows = F, cluster_cols = F, show_rownames = F, show_colnames = F,
-           color = c("#FFF5F0", "red"), na_col="white")
+  print(pheatmap(matrixData2, cluster_rows = F, cluster_cols = F, show_rownames = F, show_colnames = F,
+           color = c("#FFF5F0", "red"), na_col="white"))
   dev.off()
   write.table(matrixData2, paste0(outputPath, TF, "_motif.txt"), row.names = F, col.names = F, sep="\t", quote=F)
   test4=colMeans(matrixData2)
@@ -2686,30 +3373,50 @@ TFValidation=function(fileName, TF, outputPath, motifAnnotFile, tfPeakFile){
   EAC_hypoDMRs_result=as.data.frame(bed_intersect(merge_data, EAC_hypoDMRs))
   ESCC_hypoDMRs=read_bed("Data/MaskUnionPMDs_DMRs/hypoESCC_Tumor.bed", n_fields = 3)
   ESCC_hypoDMRs_result=as.data.frame(bed_intersect(merge_data, ESCC_hypoDMRs))
-  result=matrix(rep(0,2*nrow(merge_data)), ncol=2)
+  
+  motifResult=as.data.frame(bed_intersect(merge_data, tmpChoose[,c("chrom", "start", "end", "number")]))
+  result=matrix(rep(0,3*nrow(merge_data)), ncol=3)
   result=as.data.frame(result)
-  colnames(result)=c("EAC_hypoDMRs", "ESCC_hypoDMRs")
+  colnames(result)=c("EAC_hypoDMRs", "ESCC_hypoDMRs", "motif")
   rownames(result)=sortbedData$V4
   result[rownames(result)%in%unique(EAC_hypoDMRs_result$name.x),]$EAC_hypoDMRs=1
   result[rownames(result)%in%unique(ESCC_hypoDMRs_result$name.x),]$ESCC_hypoDMRs=1
-  plotBarplotData=data.frame(Type=c("EAC_hypoDMRs","ESCC_hypoDMRs"),
-                             Ratio=c(nrow(result[result$EAC_hypoDMRs==1,])/nrow(result),
-                                     nrow(result[result$ESCC_hypoDMRs==1,])/nrow(result)))
+  result[rownames(result)%in%unique(motifResult$name.x),]$motif=1
+  result2=data.frame(region=rownames(result), result)
+  write.table(result2, paste(outputPath, TF, ".PerPeakOverlapDMR.txt",sep=""), row.names = F, col.names = T, sep="\t", quote=F)
+  
+  plotBarplotData=data.frame(Type=c("EAC_hypoDMRs","EAC_hypoDMRs", "ESCC_hypoDMRs", "ESCC_hypoDMRs"),
+                             Motif=c("with", "without", "with", "without"),
+                             Ratio=c(nrow(result[result$EAC_hypoDMRs==1&result$motif==1,])/nrow(result),
+                                     nrow(result[result$EAC_hypoDMRs==1&result$motif==0,])/nrow(result),
+                                     nrow(result[result$ESCC_hypoDMRs==1&result$motif==1,])/nrow(result),
+                                     nrow(result[result$ESCC_hypoDMRs==1&result$motif==0,])/nrow(result)),
+                             number=c(nrow(result[result$EAC_hypoDMRs==1&result$motif==1,]),
+                                      nrow(result[result$EAC_hypoDMRs==1&result$motif==0,]),
+                                      nrow(result[result$ESCC_hypoDMRs==1&result$motif==1,]),
+                                      nrow(result[result$ESCC_hypoDMRs==1&result$motif==0,])))
   plotBarplotData$Type=factor(plotBarplotData$Type, levels=c("EAC_hypoDMRs","ESCC_hypoDMRs"))
-  write.table(plotBarplotData, paste(outputPath, TF, ".overlapRatio.txt",sep=""), row.names = F, col.names = T, sep="\t", quote=F)
-  p<-ggplot(data=plotBarplotData, aes(x=Type, y=Ratio)) + geom_bar(stat="identity", width = 0.7, fill="black")
+  plotBarplotData$Motif=factor(plotBarplotData$Motif, levels=c("with","without"))
+  p=ggplot(data=plotBarplotData, aes(x=Type, y=Ratio, fill=Motif)) + geom_bar(stat="identity", width = 0.7)
   p=p+ylab("Fraction of peaks overlapped with DMRs")+xlab("")
+  p=p+scale_fill_manual(values=c("darkred", "darkgrey"))
   p=p+theme_classic()+theme(axis.text.x = element_text(angle=45, size=10, color = "black", hjust = 1, vjust = 1))
   pdf(paste(outputPath, TF, ".PeaksPercontainsDMR.pdf",sep=""), width=3, height=4)
   print(p)
   dev.off()
   
-  pdf(paste(outputPath, TF, ".PerPeakOverlapDMR.pdf",sep=""), width=2, height=7)
-  print(pheatmap(result, show_rownames = F, show_colnames = F, cluster_rows = F, cluster_cols = F, 
-                 color = c("#FAFAFA", "black")))
+  pie1=ggplot(plotBarplotData[plotBarplotData$Type%in%"EAC_hypoDMRs",], aes(x="", y=number, fill=Motif)) + geom_bar(stat="identity", width=1) + coord_polar("y", start=0)+theme_void()+scale_fill_manual(values=c("#8B0000", "#000000"))
+  pie2=ggplot(plotBarplotData[plotBarplotData$Type%in%"ESCC_hypoDMRs",], aes(x="", y=number, fill=Motif)) + geom_bar(stat="identity", width=1) + coord_polar("y", start=0)+theme_void()+scale_fill_manual(values=c("#8B0000", "#000000"))
+  pdf(paste(outputPath, TF, ".PeaksPercontainsDMR.MotifPie.pdf",sep=""), width=8, height=3)
+  print(ggarrange(pie1,pie2))
   dev.off()
-  result=data.frame(region=rownames(result), result)
-  write.table(result, paste(outputPath, TF, ".PerPeakOverlapDMR.txt",sep=""), row.names = F, col.names = T, sep="\t", quote=F)
+  
+  result[result$EAC_hypoDMRs==1&result$motif==1,]$EAC_hypoDMRs=2
+  result[result$ESCC_hypoDMRs==1&result$motif==1,]$ESCC_hypoDMRs=2
+  pdf(paste(outputPath, TF, ".PerPeakOverlapDMR.pdf",sep=""), width=2, height=7)
+  print(pheatmap(result[,1:2], show_rownames = F, show_colnames = F, cluster_rows = F, cluster_cols = F, color = c("#FAFAFA", "black", "darkred")))
+  dev.off()
+
 }
 TFValidation("Data/Figure5IJ/ESO26_GATA4_H3K27ac_WGBS.tab", "GATA4", "Figure5IJ/Eso26_", "Data/Figure5IJ/Eso26_Gata4flagvsInput_summits.chr.3kb.GATA4.txt", "Data/Figure5IJ/Eso26_Gata4flagvsInput_peaks.narrowPeak")
 TFValidation("Data/Figure5IJ/TE5_TP63_H3K27ac_WGBS.tab", "TP63", "Figure5IJ/P63_", "Data/Figure5IJ/TE5_TP63vsInput_summits.chr.3kb.P63.txt", "Data/Figure5IJ/TE5_TP63vsInput_peaks.narrowPeak")
@@ -2780,12 +3487,12 @@ EACTumor_mergeTFs_result=EACTumor_mergeTFs_result[order(EACTumor_mergeTFs_result
 p=ggplot(EACTumor_mergeTFs_result, aes(x=EACTvsEACN, y=deltaOR, label=TF)) + geom_point(pch=15, size=3)+theme_classic()+geom_text(size=3, angle=15, hjust=1)
 p=p+xlab("log2 fold change(EAC tumor v.s. nonmalignant EAC)")+ylab("delta OR (ts hypoDMRs v.s. non-ts hypoDMRs)")
 p=p+geom_hline(yintercept=0, linetype="dotted", size=1, color="grey")+geom_vline(xintercept=log2(1.5), linetype="dotted", size=1, color="grey")
-pdf("Figure6E_S4E/Figure6E_EACTumor_tsvsnonts.pdf", height=5, width=7)
+pdf("Figure6E_S5E/Figure6E_EACTumor_tsvsnonts.pdf", height=5, width=7)
 print(p)
 dev.off()
-write.table(EACTumor_mergeTFs_result, "Figure6E_S4E/Figure6E_EACTumor_tsvsnonts.txt", row.names = F, col.names = T, sep="\t", quote=F)
+write.table(EACTumor_mergeTFs_result, "Figure6E_S5E/Figure6E_EACTumor_tsvsnonts.txt", row.names = F, col.names = T, sep="\t", quote=F)
 
-###FigureS4E
+###FigureS5E
 ESCCTumor_mergeTFs_result=merge(ESCCTumor_mergeTFs, ESCC_EAC_targetResults[,c(6,2,4:5)], by.x="gene", by.y="GeneName")
 ESCCTumor_mergeTFs_result=merge(ESCCTumor_mergeTFs_result, ESCC_TN_targetResults[,c(6,2,4,5)], by.x="gene", by.y="GeneName")
 ESCCTumor_mergeTFs_result=ESCCTumor_mergeTFs_result[,c(2:6,8:9,12,11,7,10)]
@@ -2796,12 +3503,12 @@ ESCCTumor_mergeTFs_result=ESCCTumor_mergeTFs_result[order(ESCCTumor_mergeTFs_res
 p=ggplot(ESCCTumor_mergeTFs_result, aes(x=ESCCTvsESCCN, y=deltaOR, label=TF)) + geom_point(pch=15, size=3)+theme_classic()+geom_text(size=3, angle=15, hjust=1)
 p=p+xlab("log2 fold change(ESCC tumor v.s. nonmalignant ES)")+ylab("delta OR (ts hypoDMRs v.s. non-ts hypoDMRs)")
 p=p+geom_hline(yintercept=0, linetype="dotted", size=1, color="grey")+geom_vline(xintercept=log2(1.5), linetype="dotted", size=1, color="grey")
-pdf("Figure6E_S4E/FigureS4E_ESCCTumor_tsvsnonts.pdf", height=5, width=7)
+pdf("Figure6E_S5E/FigureS5E_ESCCTumor_tsvsnonts.pdf", height=5, width=7)
 print(p)
 dev.off()
-write.table(ESCCTumor_mergeTFs_result, "Figure6E_S4E/FigureS4E_ESCCTumor_tsvsnonts.txt", row.names = F, col.names = T, sep="\t", quote=F)
+write.table(ESCCTumor_mergeTFs_result, "Figure6E_S5E/FigureS5E_ESCCTumor_tsvsnonts.txt", row.names = F, col.names = T, sep="\t", quote=F)
 
-##############################################################################################################
+#########################################FigureS4KL_S6CD########################################################
 getDMRMethylationAndExpressionCor=function(annotFile, DEExpMatrix, type, saveFile){
   annotResult=read_tsv(annotFile)
   annotResult=annotResult[,c(2:4,15)]
@@ -2820,10 +3527,10 @@ getDMRMethylationAndExpressionCor=function(annotFile, DEExpMatrix, type, saveFil
   print(length(targetGenesExp$GeneID))
   write.table(targetGenesExp$GeneID, file=saveFile, row.names = F, col.names = F, sep="\t", quote=F)
 }
-getDMRMethylationAndExpressionCor("Data/Figure5GH/hypoEAC_Tumor.annot.txt", ESCC_EAC_targetResults, "hypoEAC_Tumor", "FigureS3IJ_S4CD/hypoEAC_Tumor.EACup.gene.txt")
-getDMRMethylationAndExpressionCor("Data/Figure5GH/hypoESCC_Tumor.annot.txt", ESCC_EAC_targetResults, "hypoESCC_Tumor", "FigureS3IJ_S4CD/hypoESCC_Tumor.ESCCup.gene.txt")
-getDMRMethylationAndExpressionCor("Data/Figure5GH/specific_hypo_EAC_Tumor.annot.txt", EAC_TN_targetResults, "tshypoEAC_Tumor", "FigureS3IJ_S4CD/specific_hypo_EAC_Tumor.EACup.gene.txt")
-getDMRMethylationAndExpressionCor("Data/Figure5GH/specific_hypo_ESCC_Tumor.annot.txt", ESCC_TN_targetResults, "tshypoESCC_Tumor", "FigureS3IJ_S4CD/specific_hypo_ESCC_Tumor.ESCCup.gene.txt")
+getDMRMethylationAndExpressionCor("Data/Figure5GH/hypoEAC_Tumor.annot.txt", ESCC_EAC_targetResults, "hypoEAC_Tumor", "FigureS4KL_S5CD/hypoEAC_Tumor.EACup.gene.txt")
+getDMRMethylationAndExpressionCor("Data/Figure5GH/hypoESCC_Tumor.annot.txt", ESCC_EAC_targetResults, "hypoESCC_Tumor", "FigureS4KL_S5CD/hypoESCC_Tumor.ESCCup.gene.txt")
+getDMRMethylationAndExpressionCor("Data/Figure5GH/specific_hypo_EAC_Tumor.annot.txt", EAC_TN_targetResults, "tshypoEAC_Tumor", "FigureS4KL_S5CD/specific_hypo_EAC_Tumor.EACup.gene.txt")
+getDMRMethylationAndExpressionCor("Data/Figure5GH/specific_hypo_ESCC_Tumor.annot.txt", ESCC_TN_targetResults, "tshypoESCC_Tumor", "FigureS4KL_S5CD/specific_hypo_ESCC_Tumor.ESCCup.gene.txt")
 
 ########################################################Figure6F##############################################
 getTargetTFDMRsByELMER=function(tsAnnotFile, nontsAnnotFile, TF, saveFile){
@@ -2960,11 +3667,11 @@ getTargetTFDMRsByELMER("Data/Figure5GH/specific_hypo_EAC_Tumor.annot.txt", "Data
                        "EAC", "HNF4A", "ts/nts hypoDMR", "Figure6H/Figure6H_HNF4A_cobinding_TF.pdf")
 
 
-########################################################FigureS3E and Figure7C#############################################
-## bash Shell/FigureS3E_7C/getDMRMeanBetaValues.sh Data/MaskUnionPMDs_DMRs/hypoEAC_Tumor.bed
-## bash Shell/FigureS3E_7C/getDMRMeanBetaValues.sh Data/MaskUnionPMDs_DMRs/hypoESCC_Tumor.bed
-## merge the result into "FigureS3E_7C/hypoDMR_methylation.txt" 
-data=read.table("FigureS3E_7C/hypoDMR_methylation.txt", sep="\t", stringsAsFactors = F, header=T, check.names = F)
+########################################################FigureS4DE and Figure7C#############################################
+## bash Shell/FigureS4DE_7C/getDMRMeanBetaValues.sh Data/MaskUnionPMDs_DMRs/hypoEAC_Tumor.bed
+## bash Shell/FigureS4DE_7C/getDMRMeanBetaValues.sh Data/MaskUnionPMDs_DMRs/hypoESCC_Tumor.bed
+## merge the result into "FigureS4DE_7C/hypoDMR_methylation.txt" 
+data=read.table("FigureS4DE_7C/hypoDMR_methylation.txt", sep="\t", stringsAsFactors = F, header=T, check.names = F)
 EAC_DMR_WGBS=data[data$Type%in%c("EAC/GEJ_Tumor", "GEJ_Nonmalignant"),]
 EAC_DMR_WGBS$Source="WGBS"
 colnames(EAC_DMR_WGBS)=c("Sample", "hypoEAC", "hypoESCC", "Type", "Source")
@@ -2986,19 +3693,19 @@ p1=plotRegionLineplot2(data[data$SampleType%in%"EAC/GEJ_Tumor",], "EAC/GEJ_Tumor
 p2=plotRegionLineplot2(data[data$SampleType%in%"ESCC_Tumor",], "ESCC_Tumor", "DMR methylation")
 p3=plotRegionLineplot2(data[data$SampleType%in%"GEJ_Nonmalignant",], "GEJ_Nonmalignant", "DMR methylation")
 p4=plotRegionLineplot2(data[data$SampleType%in%"ESCC_Nonmalignant",], "ESCC_Nonmalignant", "DMR methylation")
-pdf("FigureS3E_7C/FigureS3E_hypoDMR_methylation.pdf", width=6, height=4.5)
+pdf("FigureS4DE_7C/FigureS4DE_hypoDMR_methylation.pdf", width=6, height=4.5)
 print(ggarrange(p1,p2, nrow=1))
 dev.off()
 
-pdf("FigureS3E_7C/Figure7C_hypoDMR_methylation.pdf", width=6, height=4.5)
+pdf("FigureS4DE_7C/Figure7C_hypoDMR_methylation.pdf", width=6, height=4.5)
 print(ggarrange(p3,p4, nrow=1))
 dev.off()
 
-########################################################Figure 7B and Figure S5AB#############################################
-#./Shell/Figure7B_S5AB/getPerRegionMethylation.sh EAC_specificPMDs.bed
-#./Shell/Figure7B_S5AB/getPerRegionMethylation.sh ESCA_sharedHMDs.bed
-#./Shell/Figure7B_S5AB/getPerRegionMethylation.sh ESCA_sharedPMDs.bed
-#./Shell/Figure7B_S5AB/getPerRegionMethylation.sh ESCC_specificPMDs.bed
+########################################################Figure 7B#############################################
+#./Shell/Figure7B/getPerRegionMethylation.sh EAC_specificPMDs.bed
+#./Shell/Figure7B/getPerRegionMethylation.sh ESCA_sharedHMDs.bed
+#./Shell/Figure7B/getPerRegionMethylation.sh ESCA_sharedPMDs.bed
+#./Shell/Figure7B/getPerRegionMethylation.sh ESCC_specificPMDs.bed
 
 calculatePvalue=function(dataMatrix, sampleList1, sampleList2, sampleList1Name, sampleList2Name){
   TtestResult=lapply(1:nrow(dataMatrix), function(x){
@@ -3044,10 +3751,10 @@ getDomainMethylation=function(domainPath, pattern){
   result$normal=targetGenesMethylation_NormalPvalue
   return(result)
 }
-EAC_regionLevelPMD=getDomainMethylation("Data/Figure7B_S5AB/PMD_methylation/", "EAC_specificPMDs")
-ESCC_regionLevelPMD=getDomainMethylation("Data/Figure7B_S5AB/PMD_methylation/", "ESCC_specificPMDs")
-ESCA_regionLevelSharedPMD=getDomainMethylation("Data/Figure7B_S5AB/PMD_methylation/", "ESCA_sharedPMDs")
-ESCA_regionLevelSharedHMD=getDomainMethylation("Data/Figure7B_S5AB/PMD_methylation/", "ESCA_sharedHMDs")
+EAC_regionLevelPMD=getDomainMethylation("Data/Figure7B/PMD_methylation/", "EAC_specificPMDs")
+ESCC_regionLevelPMD=getDomainMethylation("Data/Figure7B/PMD_methylation/", "ESCC_specificPMDs")
+ESCA_regionLevelSharedPMD=getDomainMethylation("Data/Figure7B/PMD_methylation/", "ESCA_sharedPMDs")
+ESCA_regionLevelSharedHMD=getDomainMethylation("Data/Figure7B/PMD_methylation/", "ESCA_sharedHMDs")
 
 Volcanoplot=function(dataMatrix, title, cutoff, color1, color2, saveFile){
   plotdata=dataMatrix
@@ -3087,30 +3794,28 @@ getSignificant=function(dataMatrix, type, targetCutoff, title, color1, color2, s
     normalTemp=dataMatrix$normal[rownames(dataMatrix$normal)%in%rownames(tumorTemp),]
     print(paste0(targetCutoff, " ", nrow(normalTemp[normalTemp$FDR<targetCutoff&normalTemp$deltaMethylation>0,]), 
                  " (", round(nrow(normalTemp[normalTemp$FDR<targetCutoff&normalTemp$deltaMethylation>0,])/nrow(normalTemp),4)*100, "%)"))
-    p=Volcanoplot(normalTemp, title, targetCutoff,  color1, color2, paste0(saveIndex, "_EAC_specificPMDs.txt"))
+    p=Volcanoplot(normalTemp, title, targetCutoff,  color1, color2, paste0(saveIndex, "_EAC_specificPMDs.normal.txt"))
   }else if(type%in%"ESCC"){
     tumorTemp=dataMatrix$tumor[dataMatrix$tumor$FDR<targetCutoff&dataMatrix$tumor$deltaMethylation<0,]
     normalTemp=dataMatrix$normal[rownames(dataMatrix$normal)%in%rownames(tumorTemp),]
     print(paste0(targetCutoff, " ", nrow(normalTemp[normalTemp$FDR<targetCutoff&normalTemp$deltaMethylation<0,]), 
                  " (", round(nrow(normalTemp[normalTemp$FDR<targetCutoff&normalTemp$deltaMethylation<0,])/nrow(normalTemp),4)*100, "%)"))
-    p=Volcanoplot(normalTemp, title, targetCutoff,  color1, color2, paste0(saveIndex, "_ESCC_specificPMDs.txt"))
+    p=Volcanoplot(normalTemp, title, targetCutoff,  color1, color2, paste0(saveIndex, "_ESCC_specificPMDs.normal.txt"))
   }
   return(p)
 }
 
-p1=Volcanoplot(EAC_regionLevelPMD$tumor, "EAC-specific PMDs", 0.1, "#0000F5", "#EA3323", "Figure7B_S5AB/FigureS5A_EAC_specificPMDs.txt")
-p2=getSignificant(EAC_regionLevelPMD, "EAC", 0.1, "EAC-specific PMDs", "#75FBFD", "#F7CE46", "Figure7B_S5AB/Figure7B")
-p3=Volcanoplot(ESCC_regionLevelPMD$tumor, "ESCC-specific PMDs", 0.1, "#0000F5", "#EA3323", "Figure7B_S5AB/FigureS5A_ESCC_specificPMDs.txt")
-p4=getSignificant(ESCC_regionLevelPMD, "ESCC", 0.1, "ESCC-specific PMDs", "#75FBFD", "#F7CE46", "Figure7B_S5AB/Figure7B")
-p5=Volcanoplot(ESCA_regionLevelSharedPMD$tumor, "shared PMD genes", 0.1, "#0000F5", "#EA3323", "Figure7B_S5AB/FigureS5B_ESCA_sharedPMDs.txt")
-p6=Volcanoplot(ESCA_regionLevelSharedHMD$tumor, "shared HMD genes", 0.1, "#0000F5", "#EA3323", "Figure7B_S5AB/FigureS5B_ESCA_sharedHMDs.txt")
+# p1=Volcanoplot(EAC_regionLevelPMD$tumor, "EAC-specific PMDs", 0.1, "#0000F5", "#EA3323", "Figure7B/EAC_specificPMDs.txt")
+# p2=getSignificant(EAC_regionLevelPMD, "EAC", 0.1, "EAC-specific PMDs", "#75FBFD", "#F7CE46", "Figure7B/Figure7B")
+# p3=Volcanoplot(ESCC_regionLevelPMD$tumor, "ESCC-specific PMDs", 0.1, "#0000F5", "#EA3323", "Figure7B/ESCC_specificPMDs.txt")
+# p4=getSignificant(ESCC_regionLevelPMD, "ESCC", 0.1, "ESCC-specific PMDs", "#75FBFD", "#F7CE46", "Figure7B/Figure7B")
+# p5=Volcanoplot(ESCA_regionLevelSharedPMD$tumor, "shared PMD genes", 0.1, "#0000F5", "#EA3323", "Figure7B/ESCA_sharedPMDs.txt")
+# p6=Volcanoplot(ESCA_regionLevelSharedHMD$tumor, "shared HMD genes", 0.1, "#0000F5", "#EA3323", "Figure7B/ESCA_sharedHMDs.txt")
 
-pdf("Figure7B_S5AB/Figure7B_S5A.volcanoplot.pdf", width=9.5, height=8)
-print(ggarrange(p1,p2,p3, p4))
-dev.off()
-
-pdf("Figure7BD_S5AB/Figure5B.volcanoplot.pdf", width=12, height=4)
-print(ggarrange(p5,p6))
+p2=getSignificant(EAC_regionLevelPMD, "EAC", 0.1, "EAC-specific PMDs", "#75FBFD", "#F7CE46", "Figure7B/Figure7B")
+p4=getSignificant(ESCC_regionLevelPMD, "ESCC", 0.1, "ESCC-specific PMDs", "#75FBFD", "#F7CE46", "Figure7B/Figure7B")
+pdf("Figure7B/Figure7B_specificPMD.volcanoplot.pdf", width=9.5, height=4)
+print(ggarrange(p2, p4))
 dev.off()
 
 ##############################################Figure7D#############################################################
@@ -3205,26 +3910,26 @@ print(ggarrange(p1,p2))
 dev.off()
 
 
-##############################################Figure7EFG_S5C#############################################################
+##############################################Figure7EFG_S7A#############################################################
 ###Figure7E_left
 ###download bed file from https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE184462
-targetTissueType=read.table("Data/Figure7EFG_S5C/GSE184462_tissueType.txt", header=T, sep="\t")
+targetTissueType=read.table("Data/Figure7EFG_S7A/GSE184462_tissueType.txt", header=T, sep="\t")
 targetEpithelialCells=targetTissueType[targetTissueType$Cells%in%"Epithelial cells",]$Tissue_contribution
-metaInfo=read.table("Data/Figure7EFG_S5C/GSE184462_metadata.tsv", sep="\t", stringsAsFactors = F, header=T)
+metaInfo=read.table("Data/Figure7EFG_S7A/GSE184462_metadata.tsv", sep="\t", stringsAsFactors = F, header=T)
 targetMetaInfo=metaInfo[metaInfo$cell.type%in%targetEpithelialCells,]
 targetMetaInfo$barcodeID=gsub(".*\\+", "", targetMetaInfo$cellID)
 
-for(PMDfile in dir("Data/Figure7EFG_S5C/PMDresult/", pattern = ".txt", full.names = T)){
+for(PMDfile in dir("Data/Figure7EFG_S7A/PMDresult/", pattern = ".txt", full.names = T)){
   tmpData=read.table(PMDfile, header=T, sep="\t", stringsAsFactors = F)
-  if(PMDfile%in%dir("Data/Figure7EFG_S5C/PMDresult/", pattern = ".txt", full.names = T)[1]){
+  if(PMDfile%in%dir("Data/Figure7EFG_S7A/PMDresult/", pattern = ".txt", full.names = T)[1]){
     PMD_result=tmpData
   }else{
     PMD_result=rbind(PMD_result, tmpData)
   }
 }
-write.table(PMD_result, "Data/Figure7EFG_S5C/PMD_result.txt", row.names = F, col.names = T, sep="\t", quote=F)
+write.table(PMD_result, "Data/Figure7EFG_S7A/PMD_result.txt", row.names = F, col.names = T, sep="\t", quote=F)
 PMD_result=merge(PMD_result, targetMetaInfo[,c("cellID", "tissue", "barcodeID")], by=c("barcodeID", "tissue"))
-umapData=read.table("Data/Figure7EFG_S5C/adult.tsv", header=T, sep="\t", stringsAsFactors = F)
+umapData=read.table("Data/Figure7EFG_S7A/adult.tsv", header=T, sep="\t", stringsAsFactors = F)
 colnames(umapData)=c("cellID", "UMAP1", "UMAP2")
 umapData=merge(umapData, PMD_result, by="cellID")
 umapData=umapData[,c(1:3,6,8:11)]
@@ -3232,7 +3937,7 @@ umapData=merge(umapData, targetTissueType[,c(1,3,4)], by.x="cell.type", by.y="Ti
 umapData$ESCC_EAC_specificPMDs=umapData$ESCC_specificPMDs-umapData$EAC_specificPMDs
 umapData$HMD_PMD=umapData$ESCA_sharedHMDs-umapData$ESCA_sharedPMDs
 umapData$Source=factor(umapData$Source, levels=c("GI", "squamous", "other"))
-write.table(umapData, "Figure7EFG_S5C/Figure7EF_S5C.data.txt", row.names = F, col.names = T, sep="\t", quote=F)
+write.table(umapData, "Figure7EFG_S7A/Figure7EF_S6C.data.txt", row.names = F, col.names = T, sep="\t", quote=F)
 
 umapData2=umapData
 umapData2[umapData2$ESCC_EAC_specificPMDs>1,]$ESCC_EAC_specificPMDs=1
@@ -3247,7 +3952,7 @@ p1=ggplot(umapData2, aes(x=UMAP1, y=UMAP2, color=Source)) + geom_point(alpha=0.7
 p1=p1+theme_classic()+scale_color_manual(values=c("blue", "red", "grey"))
 p1=p1+theme(axis.line=element_blank(), axis.ticks = element_blank(), axis.text = element_blank(), axis.title = element_blank())
 p1=p1+theme(legend.position = "none")
-png("Figure7EFG_S5C/Figure7E.cluster.png", res=300, height=1600, width=2000)
+png("Figure7EFG_S7A/Figure7E.cluster.png", res=300, height=1600, width=2000)
 print(p1)
 dev.off()
 
@@ -3256,24 +3961,24 @@ p2=ggplot(umapData2, aes(x=UMAP1, y=UMAP2, color=ESCC_EAC_specificPMDs)) + geom_
 p2=p2+theme_classic()+scale_color_gradient2(low ="red", mid = "white", high ="blue", limits=c(-1, 1), 
                                             midpoint = 0, name="delta methylation\n(ESCC_tumor_PMDs \nV.S. EAC_tumor_PMDs)")
 p2=p2+theme(axis.line=element_blank(), axis.ticks = element_blank(), axis.text = element_blank(), axis.title = element_blank())
-pdf("Figure7EFG_S5C/Figure7E.middle.pdf", height=5, width=7)
+pdf("Figure7EFG_S7A/Figure7E.middle.pdf", height=5, width=7)
 print(p2)
 dev.off()
 p2=p2+theme(legend.position = "none")
-png("Figure7EFG_S5C/Figure7E.middle.png", res=300, height=1700, width=2000)
+png("Figure7EFG_S7A/Figure7E.middle.png", res=300, height=1700, width=2000)
 print(p2)
 dev.off()
 
-###FigureS5C
+###FigureS7A
 p3=ggplot(umapData2, aes(x=UMAP1, y=UMAP2, color=HMD_PMD)) + geom_point(alpha=0.7,size=0.1)
 p3=p3+theme_classic()+scale_color_gradient2(low ="red", mid = "white", high ="blue", limits=c(-2, 2), 
                                             midpoint = 0, name="delta methylation\n(shared_HMDs \nV.S. shared_PMDs)")
 p3=p3+theme(axis.line=element_blank(), axis.ticks = element_blank(), axis.text = element_blank(), axis.title = element_blank())
-pdf("Figure7EFG_S5C/FigureS5C.pdf", height=5, width=7)
+pdf("Figure7EFG_S7A/FigureS7A.pdf", height=5, width=7)
 print(p3)
 dev.off()
 p3=p3+theme(legend.position = "none")
-png("Figure7EFG_S5C/FigureS5C.png", res=300, height=1600, width=2000)
+png("Figure7EFG_S7A/FigureS7A.png", res=300, height=1600, width=2000)
 print(p3)
 dev.off()
 
@@ -3328,27 +4033,27 @@ plotScATACPointPlot=function(plotdata, ylabel, saveFile){
 }
 plotdata=umapData[,c("Subtype", "ESCC_EAC_specificPMDs", "Source")]
 colnames(plotdata)=c("cluster", "delta", "source")
-plotScATACPointPlot(plotdata, "delta accessiblity (ESCC-specific \nPMDs V.S. EAC-specific PMDs)", "Figure7EFG_S5C/Figure7F.png")
+plotScATACPointPlot(plotdata, "delta accessiblity (ESCC-specific \nPMDs V.S. EAC-specific PMDs)", "Figure7EFG_S7A/Figure7F.png")
 
 ######Figure7E_right
-for(DMRfile in dir("Data/Figure7EFG_S5C/DMRresult//", pattern = ".txt", full.names = T)){
+for(DMRfile in dir("Data/Figure7EFG_S7A/DMRresult//", pattern = ".txt", full.names = T)){
   tmpData=read.table(DMRfile, header=T, sep="\t", stringsAsFactors = F)
-  if(DMRfile%in%dir("Data/Figure7EFG_S5C/DMRresult//", pattern = ".txt", full.names = T)[1]){
+  if(DMRfile%in%dir("Data/Figure7EFG_S7A/DMRresult//", pattern = ".txt", full.names = T)[1]){
     DMR_result=tmpData
   }else{
     DMR_result=rbind(DMR_result, tmpData)
   }
 }
-write.table(DMR_result, "Data/Figure7EFG_S5C/DMR_result.txt", row.names = F, col.names = T, sep="\t", quote=F)
+write.table(DMR_result, "Data/Figure7EFG_S7A/DMR_result.txt", row.names = F, col.names = T, sep="\t", quote=F)
 DMR_result=merge(DMR_result, targetMetaInfo[,c("cellID", "tissue", "barcodeID")], by=c("barcodeID", "tissue"))
-umapData=read.table("Data/Figure7EFG_S5C/adult.tsv", header=T, sep="\t", stringsAsFactors = F)
+umapData=read.table("Data/Figure7EFG_S7A/adult.tsv", header=T, sep="\t", stringsAsFactors = F)
 colnames(umapData)=c("cellID", "UMAP1", "UMAP2")
 umapData=merge(umapData, DMR_result, by="cellID")
 umapData=umapData[,c(1:3,6,8:9)]
 umapData=merge(umapData, targetTissueType[,c(1,3,4)], by.x="cell.type", by.y="Tissue_contribution")
 umapData$ESCC_EAC_DMRs=umapData$ESCC_DMRs-umapData$EAC_DMRs
 umapData$Source=factor(umapData$Source, levels=c("GI", "squamous", "other"))
-write.table(umapData, "Data/Figure7EFG_S5C/Figure7EG.data.txt", row.names = F, col.names = T, sep="\t", quote=F)
+write.table(umapData, "Data/Figure7EFG_S7A/Figure7EG.data.txt", row.names = F, col.names = T, sep="\t", quote=F)
 umapData2=umapData
 umapData2[umapData2$ESCC_EAC_DMRs>10,]$ESCC_EAC_DMRs=10
 umapData2[umapData2$ESCC_EAC_DMRs<(-10),]$ESCC_EAC_DMRs=(-10)
@@ -3356,11 +4061,11 @@ p2=ggplot(umapData2, aes(x=UMAP1, y=UMAP2, color=ESCC_EAC_DMRs)) + geom_point(al
 p2=p2+theme_classic()+scale_color_gradient2(low ="blue", mid = "white", high ="red", limits=c(-10, 10), 
                                             midpoint = 0, name="delta methylation\n(ESCC_tumor_PMDs \nV.S. EAC_tumor_PMDs)")
 p2=p2+theme(axis.line=element_blank(), axis.ticks = element_blank(), axis.text = element_blank(), axis.title = element_blank())
-pdf("Figure7EFG_S5C/Figure7E.right.pdf", height=5, width=7)
+pdf("Figure7EFG_S7A/Figure7E.right.pdf", height=5, width=7)
 print(p2)
 dev.off()
 p2=p2+theme(legend.position = "none")
-png("Figure7EFG_S5C/Figure7E.right.png", res=300, height=2000, width=2000)
+png("Figure7EFG_S7A/Figure7E.right.png", res=300, height=2000, width=2000)
 print(p2)
 dev.off()
 
@@ -3373,12 +4078,12 @@ meanData=meanData[order(meanData$mean),]
 umapData$Subtype=factor(umapData$Subtype, levels=meanData$Subtype)
 plotdata=umapData[,c("Subtype", "ESCC_EAC_DMRs", "Source")]
 colnames(plotdata)=c("cluster", "delta", "source")
-plotScATACPointPlot(plotdata, "delta accessiblity (ESCC-specific \nDMRs V.S. EAC-specific DMRs)", "Figure7EFG_S5C/Figure7G.png")
+plotScATACPointPlot(plotdata, "delta accessiblity (ESCC-specific \nDMRs V.S. EAC-specific DMRs)", "Figure7EFG_S7A/Figure7G.png")
 
-##############################################Figure8ABCDE_S5DE#############################################################
+##############################################Figure8ABCDE_S7B#############################################################
 ######Figure8DE
-cancerSubtypeInfo=read.table("Data/Figure8ABCDE_S5D/TCGA_cancerSample.txt", sep="\t", stringsAsFactors = F, header=T)
-bladderSubtypeInfo=read.table("Data/Figure8ABCDE_S5D/TCGA_bladderSample.txt", sep="\t", stringsAsFactors = F, header=T)
+cancerSubtypeInfo=read.table("Data/Figure8ABCDE_S7B/TCGA_cancerSample.txt", sep="\t", stringsAsFactors = F, header=T)
+bladderSubtypeInfo=read.table("Data/Figure8ABCDE_S7B/TCGA_bladderSample.txt", sep="\t", stringsAsFactors = F, header=T)
 bladderSubtypeInfo$PATIENT_BARCODE=do.call(c, lapply(bladderSubtypeInfo$ID, function(x){
   paste0(strsplit(x, "-")[[1]][1:3], collapse = "-")
 }))
@@ -3457,52 +4162,53 @@ getMethylationHT450k=function(regionFile, probesFile, type, methylationMatrix){
   return(tempData)
 }
 getAllCancerMethylation=function(cancerSampleInfo, saveFile){
-  probesFile="meta/HT450k.probe.rmCGI.rmblackList.solo.bed"
-  sampleNum=data.frame(table(cancerSampleInfo$DISEASE),stringsAsFactors = F)
-  resultMatrix= as.data.frame(matrix(numeric(0),ncol=5))
-  sampleInfoMatrix=as.data.frame(matrix(numeric(0),ncol=3))
-  for(cancerType in as.character(sampleNum$Var1)){
-    print(cancerType)
-    load(paste0("/Volumes/Yuan_2T/TCGA/Methylation_array/Methylation/TCGA-", cancerType, "_methylation_hg38.v2.RData"))
-    TCGAprobeMethylationMatrix=result
-    TCGAprobeSampleInfo=match.file.cases
-    if(cancerType%in%"CHOL"){
-      TCGAprobeSampleInfo=TCGAprobeSampleInfo[,c(1,4,3)]
-    }else{
-      TCGAprobeSampleInfo=TCGAprobeSampleInfo[,c(1,4,2)]
-    }
-    colnames(TCGAprobeSampleInfo)=c("Sample","SampleName", "Type")
-    print(paste0(cancerType, " ", nrow(TCGAprobeSampleInfo)))
-    TCGAprobeMethylationMatrix=TCGAprobeMethylationMatrix[,colnames(TCGAprobeMethylationMatrix)%in%TCGAprobeSampleInfo$SampleName]
-    temp1=suppressWarnings(getMethylationHT450k("Data/MMSeekR_PMDs/ESCC_specificPMDs.bed", probesFile, "ESCC_specificPMDs",  TCGAprobeMethylationMatrix))
-    temp2=suppressWarnings(getMethylationHT450k("Data/MMSeekR_PMDs/EAC_specificPMDs.bed", probesFile, "EAC_specificPMDs", TCGAprobeMethylationMatrix))
-    temp3=suppressWarnings(getMethylationHT450k("Data/MMSeekR_PMDs/ESCA_sharedPMDs.bed", probesFile, "SharedPMDs", TCGAprobeMethylationMatrix))
-    temp4=suppressWarnings(getMethylationHT450k("Data/MMSeekR_PMDs/ESCA_sharedHMDs.bed", probesFile, "SharedHMDs", TCGAprobeMethylationMatrix))
-    temp=cbind(temp1, temp2, temp3, temp4)
-    temp$cancerType=cancerType
-    resultMatrix=rbind(resultMatrix, temp)
-    sampleInfoMatrix=rbind(sampleInfoMatrix, TCGAprobeSampleInfo)
-  }
-  sampleInfoMatrix2=sampleInfoMatrix
-  resultMatrix2=resultMatrix
-  resultMatrix$SampleName=rownames(resultMatrix)
-  resultMatrix=merge(resultMatrix, sampleInfoMatrix, by.x="SampleName", by.y="SampleName", all.x=T)
-  resultMatrix=merge(resultMatrix, cancerSubtypeInfo[,c(1,5)], by.x="Sample", by.y="PATIENT_BARCODE", all.x=T)
-  resultMatrix[is.na(resultMatrix$Label),]$Label="Others"
-  resultMatrix$delta_ESCCspecificVSEACspecific=resultMatrix$ESCC_specificPMDs-resultMatrix$EAC_specificPMDs
-  resultMatrix$delta_sharedHMDVSsharedPMD= resultMatrix$SharedHMDs-resultMatrix$SharedPMDs
+  # probesFile="meta/HT450k.probe.rmCGI.rmblackList.solo.bed"
+  # sampleNum=data.frame(table(cancerSampleInfo$DISEASE),stringsAsFactors = F)
+  # resultMatrix= as.data.frame(matrix(numeric(0),ncol=5))
+  # sampleInfoMatrix=as.data.frame(matrix(numeric(0),ncol=3))
+  # for(cancerType in as.character(sampleNum$Var1)){
+  #   print(cancerType)
+  #   load(paste0("/Volumes/Yuan_2T/TCGA/Methylation_array/Methylation/TCGA-", cancerType, "_methylation_hg38.v2.RData"))
+  #   TCGAprobeMethylationMatrix=result
+  #   TCGAprobeSampleInfo=match.file.cases
+  #   if(cancerType%in%"CHOL"){
+  #     TCGAprobeSampleInfo=TCGAprobeSampleInfo[,c(1,4,3)]
+  #   }else{
+  #     TCGAprobeSampleInfo=TCGAprobeSampleInfo[,c(1,4,2)]
+  #   }
+  #   colnames(TCGAprobeSampleInfo)=c("Sample","SampleName", "Type")
+  #   print(paste0(cancerType, " ", nrow(TCGAprobeSampleInfo)))
+  #   TCGAprobeMethylationMatrix=TCGAprobeMethylationMatrix[,colnames(TCGAprobeMethylationMatrix)%in%TCGAprobeSampleInfo$SampleName]
+  #   temp1=suppressWarnings(getMethylationHT450k("Data/MMSeekR_PMDs/ESCC_specificPMDs.bed", probesFile, "ESCC_specificPMDs",  TCGAprobeMethylationMatrix))
+  #   temp2=suppressWarnings(getMethylationHT450k("Data/MMSeekR_PMDs/EAC_specificPMDs.bed", probesFile, "EAC_specificPMDs", TCGAprobeMethylationMatrix))
+  #   temp3=suppressWarnings(getMethylationHT450k("Data/MMSeekR_PMDs/ESCA_sharedPMDs.bed", probesFile, "SharedPMDs", TCGAprobeMethylationMatrix))
+  #   temp4=suppressWarnings(getMethylationHT450k("Data/MMSeekR_PMDs/ESCA_sharedHMDs.bed", probesFile, "SharedHMDs", TCGAprobeMethylationMatrix))
+  #   temp=cbind(temp1, temp2, temp3, temp4)
+  #   temp$cancerType=cancerType
+  #   resultMatrix=rbind(resultMatrix, temp)
+  #   sampleInfoMatrix=rbind(sampleInfoMatrix, TCGAprobeSampleInfo)
+  # }
+  # sampleInfoMatrix2=sampleInfoMatrix
+  # resultMatrix2=resultMatrix
+  # resultMatrix$SampleName=rownames(resultMatrix)
+  # resultMatrix=merge(resultMatrix, sampleInfoMatrix, by.x="SampleName", by.y="SampleName", all.x=T)
+  # resultMatrix=merge(resultMatrix, cancerSubtypeInfo[,c(1,5)], by.x="Sample", by.y="PATIENT_BARCODE", all.x=T)
+  # resultMatrix[is.na(resultMatrix$Label),]$Label="Others"
+  # resultMatrix$delta_ESCCspecificVSEACspecific=resultMatrix$ESCC_specificPMDs-resultMatrix$EAC_specificPMDs
+  # resultMatrix$delta_sharedHMDVSsharedPMD= resultMatrix$SharedHMDs-resultMatrix$SharedPMDs
+  # 
+  # tumorResultMatrix=resultMatrix[resultMatrix$Type%in%"Tumor",]
+  # tumorResultMatrix[tumorResultMatrix$Sample%in%EAC_id,]$cancerType="EAC"
+  # tumorResultMatrix[tumorResultMatrix$Sample%in%ESCC_id,]$cancerType="ESCC"
+  # tumorResultMatrix=tumorResultMatrix[!tumorResultMatrix$cancerType%in%"ESCA",]
+  # tumorResultMatrix[tumorResultMatrix$Label%in%"BLCA (Ba/Sq)",]$cancerType="BLCA (Ba/Sq)"
+  # tumorResultMatrix[tumorResultMatrix$cancerType%in%"BLCA",]$cancerType="BLCA (Others)"
+  # tumorResultMatrix[tumorResultMatrix$Label%in%"CESC (Sq)",]$cancerType="CESC (Sq)"
+  # tumorResultMatrix[tumorResultMatrix$cancerType%in%"CESC",]$cancerType="CESC (Others)"
+  # tumorResultMatrix=tumorResultMatrix[,c(2,7,10,11)]
+  # save(tumorResultMatrix, file="Data/Figure8ABCDE_S7B/TCGA_methylation.Rdata")
   
-  tumorResultMatrix=resultMatrix[resultMatrix$Type%in%"Tumor",]
-  tumorResultMatrix[tumorResultMatrix$Sample%in%EAC_id,]$cancerType="EAC"
-  tumorResultMatrix[tumorResultMatrix$Sample%in%ESCC_id,]$cancerType="ESCC"
-  tumorResultMatrix=tumorResultMatrix[!tumorResultMatrix$cancerType%in%"ESCA",]
-  tumorResultMatrix[tumorResultMatrix$Label%in%"BLCA (Ba/Sq)",]$cancerType="BLCA (Ba/Sq)"
-  tumorResultMatrix[tumorResultMatrix$cancerType%in%"BLCA",]$cancerType="BLCA (Others)"
-  tumorResultMatrix[tumorResultMatrix$Label%in%"CESC (Sq)",]$cancerType="CESC (Sq)"
-  tumorResultMatrix[tumorResultMatrix$cancerType%in%"CESC",]$cancerType="CESC (Others)"
-  tumorResultMatrix=tumorResultMatrix[,c(2,7,10,11)]
-  save(tumorResultMatrix, file="Data/Figure8ABCDE_S5D/TCGA_methylation.Rdata")
-  
+  load("Data/Figure8ABCDE_S7B/TCGA_methylation.Rdata")
   medianData= do.call(c, lapply(unique(tumorResultMatrix$cancerType), function(x){
     mean(tumorResultMatrix[tumorResultMatrix$cancerType%in%x,]$delta_ESCCspecificVSEACspecific)
   }))
@@ -3517,52 +4223,52 @@ getAllCancerMethylation=function(cancerSampleInfo, saveFile){
   write.table(tumorResultMatrix, gsub(".pdf", ".data.txt", saveFile), row.names = F, col.names = T, sep="\t", quote=F)
   plotMutationPointPlot(tumorResultMatrix, "Methyation(ESCC only PMDs v.s. EAC only PMDs)", saveFile)
 }
-getAllCancerMethylation(cancerSubtypeInfo, "Figure8ABCDE_S5D/Figure8D.pdf")
+getAllCancerMethylation(cancerSubtypeInfo, "Figure8ABCDE_S7B/Figure8D.pdf")
 
 ######Figure8E
 getAllCancerMethylationDMRs=function(cancerSampleInfo, saveFile){
-  probesFile="meta/HT450k.probe.rmblackList.bed"
-  sampleNum=data.frame(table(cancerSampleInfo$DISEASE),stringsAsFactors = F)
-  resultMatrix= as.data.frame(matrix(numeric(0),ncol=3))
-  sampleInfoMatrix=as.data.frame(matrix(numeric(0),ncol=3))
-  for(cancerType in as.character(sampleNum$Var1)){
-    print(cancerType)
-    load(paste0("/Volumes/Yuan_2T/TCGA/Methylation_array/Methylation/TCGA-", cancerType, "_methylation_hg38.v2.RData"))
-    TCGAprobeMethylationMatrix=result
-    TCGAprobeSampleInfo=match.file.cases
-    if(cancerType%in%"CHOL"){
-      TCGAprobeSampleInfo=TCGAprobeSampleInfo[,c(1,4,3)]
-    }else{
-      TCGAprobeSampleInfo=TCGAprobeSampleInfo[,c(1,4,2)]
-    }
-    colnames(TCGAprobeSampleInfo)=c("Sample","SampleName", "Type")
-    print(paste0(cancerType, " ", nrow(TCGAprobeSampleInfo)))
-    TCGAprobeMethylationMatrix=TCGAprobeMethylationMatrix[,colnames(TCGAprobeMethylationMatrix)%in%TCGAprobeSampleInfo$SampleName]
-    temp1=suppressWarnings(getMethylationHT450k("Data/MaskUnionPMDs_DMRs/hypoESCC_Tumor.bed", probesFile, "ESCC_DMRs",  TCGAprobeMethylationMatrix))
-    temp2=suppressWarnings(getMethylationHT450k("Data/MaskUnionPMDs_DMRs/hypoEAC_Tumor.bed", probesFile, "EAC_DMRs", TCGAprobeMethylationMatrix))
-    temp=cbind(temp1, temp2)
-    temp$cancerType=cancerType
-    resultMatrix=rbind(resultMatrix, temp)
-    sampleInfoMatrix=rbind(sampleInfoMatrix, TCGAprobeSampleInfo)
-  }
-  sampleInfoMatrix2=sampleInfoMatrix
-  resultMatrix2=resultMatrix
-  resultMatrix$SampleName=rownames(resultMatrix)
-  resultMatrix=merge(resultMatrix, sampleInfoMatrix, by.x="SampleName", by.y="SampleName", all.x=T)
-  resultMatrix=merge(resultMatrix, cancerSubtypeInfo[,c(1,5)], by.x="Sample", by.y="PATIENT_BARCODE", all.x=T)
-  resultMatrix[is.na(resultMatrix$Label),]$Label="Others"
-  resultMatrix$delta_ESCCDMRsVSEACDMRs=resultMatrix$ESCC_DMRs-resultMatrix$EAC_DMRs
-  tumorResultMatrix=resultMatrix[resultMatrix$Type%in%"Tumor",]
-  tumorResultMatrix[tumorResultMatrix$Sample%in%EAC_id,]$cancerType="EAC"
-  tumorResultMatrix[tumorResultMatrix$Sample%in%ESCC_id,]$cancerType="ESCC"
-  tumorResultMatrix=tumorResultMatrix[!tumorResultMatrix$cancerType%in%"ESCA",]
-  tumorResultMatrix[tumorResultMatrix$Label%in%"BLCA (Ba/Sq)",]$cancerType="BLCA (Ba/Sq)"
-  tumorResultMatrix[tumorResultMatrix$cancerType%in%"BLCA",]$cancerType="BLCA (Others)"
-  tumorResultMatrix[tumorResultMatrix$Label%in%"CESC (Sq)",]$cancerType="CESC (Sq)"
-  tumorResultMatrix[tumorResultMatrix$cancerType%in%"CESC",]$cancerType="CESC (Others)"
-  tumorResultMatrix=tumorResultMatrix[,c(2,5,7,8)]
-  save(tumorResultMatrix, file="Data/Figure8ABCDE_S5D/TCGA_methylation_AllDMR.Rdata")
-  
+  # probesFile="meta/HT450k.probe.rmblackList.bed"
+  # sampleNum=data.frame(table(cancerSampleInfo$DISEASE),stringsAsFactors = F)
+  # resultMatrix= as.data.frame(matrix(numeric(0),ncol=3))
+  # sampleInfoMatrix=as.data.frame(matrix(numeric(0),ncol=3))
+  # for(cancerType in as.character(sampleNum$Var1)){
+  #   print(cancerType)
+  #   load(paste0("/Volumes/Yuan_2T/TCGA/Methylation_array/Methylation/TCGA-", cancerType, "_methylation_hg38.v2.RData"))
+  #   TCGAprobeMethylationMatrix=result
+  #   TCGAprobeSampleInfo=match.file.cases
+  #   if(cancerType%in%"CHOL"){
+  #     TCGAprobeSampleInfo=TCGAprobeSampleInfo[,c(1,4,3)]
+  #   }else{
+  #     TCGAprobeSampleInfo=TCGAprobeSampleInfo[,c(1,4,2)]
+  #   }
+  #   colnames(TCGAprobeSampleInfo)=c("Sample","SampleName", "Type")
+  #   print(paste0(cancerType, " ", nrow(TCGAprobeSampleInfo)))
+  #   TCGAprobeMethylationMatrix=TCGAprobeMethylationMatrix[,colnames(TCGAprobeMethylationMatrix)%in%TCGAprobeSampleInfo$SampleName]
+  #   temp1=suppressWarnings(getMethylationHT450k("Data/MaskUnionPMDs_DMRs/hypoESCC_Tumor.bed", probesFile, "ESCC_DMRs",  TCGAprobeMethylationMatrix))
+  #   temp2=suppressWarnings(getMethylationHT450k("Data/MaskUnionPMDs_DMRs/hypoEAC_Tumor.bed", probesFile, "EAC_DMRs", TCGAprobeMethylationMatrix))
+  #   temp=cbind(temp1, temp2)
+  #   temp$cancerType=cancerType
+  #   resultMatrix=rbind(resultMatrix, temp)
+  #   sampleInfoMatrix=rbind(sampleInfoMatrix, TCGAprobeSampleInfo)
+  # }
+  # sampleInfoMatrix2=sampleInfoMatrix
+  # resultMatrix2=resultMatrix
+  # resultMatrix$SampleName=rownames(resultMatrix)
+  # resultMatrix=merge(resultMatrix, sampleInfoMatrix, by.x="SampleName", by.y="SampleName", all.x=T)
+  # resultMatrix=merge(resultMatrix, cancerSubtypeInfo[,c(1,5)], by.x="Sample", by.y="PATIENT_BARCODE", all.x=T)
+  # resultMatrix[is.na(resultMatrix$Label),]$Label="Others"
+  # resultMatrix$delta_ESCCDMRsVSEACDMRs=resultMatrix$ESCC_DMRs-resultMatrix$EAC_DMRs
+  # tumorResultMatrix=resultMatrix[resultMatrix$Type%in%"Tumor",]
+  # tumorResultMatrix[tumorResultMatrix$Sample%in%EAC_id,]$cancerType="EAC"
+  # tumorResultMatrix[tumorResultMatrix$Sample%in%ESCC_id,]$cancerType="ESCC"
+  # tumorResultMatrix=tumorResultMatrix[!tumorResultMatrix$cancerType%in%"ESCA",]
+  # tumorResultMatrix[tumorResultMatrix$Label%in%"BLCA (Ba/Sq)",]$cancerType="BLCA (Ba/Sq)"
+  # tumorResultMatrix[tumorResultMatrix$cancerType%in%"BLCA",]$cancerType="BLCA (Others)"
+  # tumorResultMatrix[tumorResultMatrix$Label%in%"CESC (Sq)",]$cancerType="CESC (Sq)"
+  # tumorResultMatrix[tumorResultMatrix$cancerType%in%"CESC",]$cancerType="CESC (Others)"
+  # tumorResultMatrix=tumorResultMatrix[,c(2,5,7,8)]
+  # save(tumorResultMatrix, file="Data/Figure8ABCDE_S7B/TCGA_methylation_AllDMR.Rdata")
+  load("Data/Figure8ABCDE_S7B/TCGA_methylation_AllDMR.Rdata")
   medianData= do.call(c, lapply(unique(tumorResultMatrix$cancerType), function(x){
     mean(tumorResultMatrix[tumorResultMatrix$cancerType%in%x,]$delta_ESCCDMRsVSEACDMRs)
   }))
@@ -3576,20 +4282,20 @@ getAllCancerMethylationDMRs=function(cancerSampleInfo, saveFile){
   write.table(tumorResultMatrix, gsub(".pdf", ".data.txt", saveFile), row.names = F, col.names = T, sep="\t", quote=F)
   plotMutationPointPlot(tumorResultMatrix, "Methyation(ESCC tumor hypoDMRs v.s. EAC tumor hypoDMRs)",saveFile)
 }
-getAllCancerMethylationDMRs(cancerSubtypeInfo, "Figure8ABCDE_S5D/Figure8E.pdf")
+getAllCancerMethylationDMRs(cancerSubtypeInfo, "Figure8ABCDE_S7B/Figure8E.pdf")
 
 #####Figure8A
-tumorColorMap=read.table("Data/Figure8ABCDE_S5D/PancanAtlas_tumor_colors.tab", sep="\t", stringsAsFactors = F, header=T, comment.char = "@")
-pancanAtlas_iCluster=read.table("Data/Figure8ABCDE_S5D/PancanAtlas_euclideaniCluster_hexagonPos.tab", sep="\t", header=F, stringsAsFactors = F)
+tumorColorMap=read.table("Data/Figure8ABCDE_S7B/PancanAtlas_tumor_colors.tab", sep="\t", stringsAsFactors = F, header=T, comment.char = "@")
+pancanAtlas_iCluster=read.table("Data/Figure8ABCDE_S7B/PancanAtlas_euclideaniCluster_hexagonPos.tab", sep="\t", header=F, stringsAsFactors = F)
 colnames(pancanAtlas_iCluster)=c("samples", "x", "y")
-pancanAtlas_iCluster_samples=read.table("Data/Figure8ABCDE_S5D/PancanAtlas_euclideaniCluster_sample.txt", sep="\t", stringsAsFactors = F, header=T)
+pancanAtlas_iCluster_samples=read.table("Data/Figure8ABCDE_S7B/PancanAtlas_euclideaniCluster_sample.txt", sep="\t", stringsAsFactors = F, header=T)
 pancanAtlas_iCluster=merge(pancanAtlas_iCluster, pancanAtlas_iCluster_samples, by.x="samples", by.y="samples")
 pancanAtlas_iCluster$type=do.call(c, lapply(pancanAtlas_iCluster$samples, function(x){as.numeric(strsplit(x, "-")[[1]][4])}))
 pancanAtlas_iCluster$barcode=do.call(c, lapply(pancanAtlas_iCluster$samples, function(x){paste0(strsplit(x, "-")[[1]][1:3], collapse = "-")}))
 pancanAtlas_iCluster=merge(pancanAtlas_iCluster, tumorColorMap, by.x="disease", by.y="disease")
 pancanAtlas_iCluster=pancanAtlas_iCluster[!duplicated(pancanAtlas_iCluster$barcode),]
 
-load("Data/Figure8ABCDE_S5D/TCGA_methylation.Rdata")
+load("Data/Figure8ABCDE_S7B/TCGA_methylation.Rdata")
 tumorResultMatrix$SampleName=gsub("_T$", "", tumorResultMatrix$SampleName)
 pancanAtlas_iCluster_methylation=merge(pancanAtlas_iCluster, tumorResultMatrix, by.x="barcode", by.y="SampleName")
 pancanAtlas_iCluster_methylation[pancanAtlas_iCluster_methylation$cancerType%in%"BLCA (Ba/Sq)",]$color="green"
@@ -3600,8 +4306,8 @@ pancanAtlas_iCluster_methylation$PanCan="Others"
 pancanAtlas_iCluster_methylation[pancanAtlas_iCluster_methylation$disease%in%c("BLCA (Ba/Sq)", "CESC (Sq)", "ESCC", "HNSC", "LUSC"),]$PanCan="Pan-Squamous"
 pancanAtlas_iCluster_methylation[pancanAtlas_iCluster_methylation$disease%in%c("EAC", "COAD", "STAD", "READ"),]$PanCan="Pan-GI"
 pancanAtlas_iCluster_methylation$PanCan=factor(pancanAtlas_iCluster_methylation$PanCan, levels=c("Others","Pan-Squamous","Pan-GI"))
+write.table(pancanAtlas_iCluster_methylation, file="Figure8ABCDE_S7B/Figure8AB_S7B.data.txt", row.names = F, col.names = T, sep="\t", quote=F)
 
-write.table(pancanAtlas_iCluster_methylation, file="Figure8ABCDE_S5D/Figure8AB_S5D.data.txt", row.names = F, col.names = T, sep="\t", quote=F)
 p1=ggplot(pancanAtlas_iCluster_methylation, aes(x=x, y=y, color=cancerType)) + geom_point(alpha=0.7,size=0.1)
 p1=p1+theme_classic()+scale_color_manual(values=unique(pancanAtlas_iCluster_methylation$color))
 p1=p1+theme(axis.line=element_blank(), axis.ticks = element_blank(), axis.text = element_blank(), axis.title = element_blank())
@@ -3610,7 +4316,7 @@ p1=ggplot(pancanAtlas_iCluster_methylation, aes(x=x, y=y, color=PanCan)) + geom_
 p1=p1+theme_classic()+scale_color_manual(values=c("grey", "#EA3323", "#0000F5"))
 p1=p1+theme(axis.line=element_blank(), axis.ticks = element_blank(), axis.text = element_blank(), axis.title = element_blank())
 p1=p1+theme(legend.position = "none")
-png("Figure8ABCDE_S5D/Figure8A.png", res=300, width=1800, height=1800)
+png("Figure8ABCDE_S7B/Figure8A.png", res=300, width=1800, height=1800)
 print(p1)
 dev.off()
 
@@ -3627,28 +4333,28 @@ p2=p2+scale_colour_gradientn(colours=colorRampPalette(c("#FF0000", "#F22626","#D
                              limits=c(-0.33, 0.33), name="delta methylation\n(ESCC_tumor_PMDs \nV.S. EAC_tumor_PMDs)")+theme_classic()
 p2=p2+theme(axis.line=element_blank(), axis.ticks = element_blank(), axis.text = element_blank(), axis.title = element_blank())
 p3=p2+theme(legend.position = "none")
-png("Figure8ABCDE_S5D/Figure8B.png", res=300, width=1800, height=1800)
+png("Figure8ABCDE_S7B/Figure8B.png", res=300, width=1800, height=1800)
 print(p3)
 dev.off()
-pdf("Figure8ABCDE_S5D/Figure8B.legend.pdf", width=6, height=6)
+pdf("Figure8ABCDE_S7B/Figure8B.legend.pdf", width=6, height=6)
 print(p2)
 dev.off()
 
-######FigureS5D
+######FigureS7B
 p2=ggplot(pancanAtlas_iCluster_methylation, aes(x=x, y=y, color=delta_sharedHMDVSsharedPMD)) + geom_point(alpha=0.7,size=0.1)
 p2=p2+theme_classic()+scale_color_gradient2(low ="red", mid = "white", high ="blue", limits=c(-0.44, 0.44),
                                             midpoint = 0, name="delta methylation\n(shared HMDs \nV.S. shared PMDs)")
 p2=p2+theme(axis.line=element_blank(), axis.ticks = element_blank(), axis.text = element_blank(), axis.title = element_blank())
 p3=p2+theme(legend.position = "none")
-png("Figure8ABCDE_S5D/FigureS5D.png", res=300, width=1800, height=1800)
+png("Figure8ABCDE_S7B/FigureS7B.png", res=300, width=1800, height=1800)
 print(p3)
 dev.off()
-pdf("Figure8ABCDE_S5D/FigureS5D.legend.pdf", width=6, height=6)
+pdf("Figure8ABCDE_S7B/FigureS7B.legend.pdf", width=6, height=6)
 print(p2)
 dev.off()
 
 ######Figure8C
-load("Data/Figure8ABCDE_S5D/TCGA_methylation_AllDMR.Rdata")
+load("Data/Figure8ABCDE_S7B/TCGA_methylation_AllDMR.Rdata")
 tumorResultMatrix$SampleName=gsub("_T$", "", tumorResultMatrix$SampleName)
 pancanAtlas_iCluster_methylation=merge(pancanAtlas_iCluster, tumorResultMatrix, by.x="barcode", by.y="SampleName")
 pancanAtlas_iCluster_methylation[pancanAtlas_iCluster_methylation$cancerType%in%"BLCA (Ba/Sq)",]$color="green"
@@ -3657,7 +4363,7 @@ pancanAtlas_iCluster_methylation[pancanAtlas_iCluster_methylation$cancerType%in%
 pancanAtlas_iCluster_methylation=pancanAtlas_iCluster_methylation[order(pancanAtlas_iCluster_methylation$cancerType),]
 pancanAtlas_iCluster_methylation$cancerType=factor(pancanAtlas_iCluster_methylation$cancerType, levels=unique(pancanAtlas_iCluster_methylation$cancerType))
 pancanAtlas_iCluster_methylation$color=factor(pancanAtlas_iCluster_methylation$color, levels=unique(pancanAtlas_iCluster_methylation$color))
-write.table(pancanAtlas_iCluster_methylation, "Figure8ABCDE_S5D/Figure8C_data.txt", row.names = F, col.names = T, sep="\t", quote=F)
+write.table(pancanAtlas_iCluster_methylation, "Figure8ABCDE_S7B/Figure8C_data.txt", row.names = F, col.names = T, sep="\t", quote=F)
 
 pancanAtlas_iCluster_methylation2=pancanAtlas_iCluster_methylation[order(pancanAtlas_iCluster_methylation$delta_ESCCDMRsVSEACDMRs),]
 pancanAtlas_iCluster_methylation2_1=pancanAtlas_iCluster_methylation2[pancanAtlas_iCluster_methylation2$delta_ESCCDMRsVSEACDMRs<(-0.4)|pancanAtlas_iCluster_methylation2$delta_ESCCDMRsVSEACDMRs>0.4,]
@@ -3675,17 +4381,18 @@ p3=p3+theme_classic()+scale_colour_gradientn(colours=colorRampPalette(c("#FF0000
                                              limits=c(-0.5, 0.5), name="delta methylation\n(ESCC_tumor_PMDs \nV.S. EAC_tumor_PMDs)")+theme_classic()
 p3=p3+theme(axis.line=element_blank(), axis.ticks = element_blank(), axis.text = element_blank(), axis.title = element_blank())
 p4=p3+theme(legend.position = "none")
-png("Figure8ABCDE_S5D/Figure8C.png", res=300, width=1800, height=1800)
+png("Figure8ABCDE_S7B/Figure8C.png", res=300, width=1800, height=1800)
 print(p4)
 dev.off()
-pdf("Figure8ABCDE_S5D/Figure8C.legend.pdf", width=6, height=6)
+pdf("Figure8ABCDE_S7B/Figure8C.legend.pdf", width=6, height=6)
 print(p3)
 dev.off()
 
+
 ##############################################Figure8F-J##############################################
 ######Figure8F
-cancerTypeInfo=read.table("Data/Figure8FHIJ_S5E/CancerType_info2.txt", header=T, sep="\t", stringsAsFactors = F, comment.char = "@")
-domainResultFile="Data/Figure8FHIJ_S5E/ATAC_domain_result.txt"
+cancerTypeInfo=read.table("Data/Figure8FHIJ_S7C/CancerType_info2.txt", header=T, sep="\t", stringsAsFactors = F, comment.char = "@")
+domainResultFile="Data/Figure8FHIJ_S7C/ATAC_domain_result.txt"
 domainResult=read.table(domainResultFile, sep="\t", stringsAsFactors = F, header=T)
 domainResult[domainResult$cancerType%in%c("Basal","LumA", "LumB", "Her2"),]$cancerType="BRCA"
 domainResult$cluster=gsub("_T[0-9]*", "", domainResult$cluster)
@@ -3709,14 +4416,14 @@ pancanAtlas_iCluster_ATAC2[pancanAtlas_iCluster_ATAC2$cancerType%in%c("BLCA (Ba/
 pancanAtlas_iCluster_ATAC2[pancanAtlas_iCluster_ATAC2$cancerType%in%c("EAC", "COAD", "STAD", "READ"),]$Type2="Pan-GI"
 pancanAtlas_iCluster_ATAC2$Type2=factor(pancanAtlas_iCluster_ATAC2$Type2, levels=c("Others","Pan-Squamous","Pan-GI"))
 
-write.table(pancanAtlas_iCluster_ATAC1, "Figure8FHIJ_S5E/Figure8FG_S5E.data.txt", row.names = F, col.names = T, sep="\t", quote=F)
-write.table(pancanAtlas_iCluster_ATAC2, "Figure8FHIJ_S5E/Figure8FG_S5E.data.txt", row.names = F, col.names = F, sep="\t", quote=F, append = T)
+write.table(pancanAtlas_iCluster_ATAC1, "Figure8FHIJ_S7C/Figure8FG_S7C.data.txt", row.names = F, col.names = T, sep="\t", quote=F)
+write.table(pancanAtlas_iCluster_ATAC2, "Figure8FHIJ_S7C/Figure8FG_S7C.data.txt", row.names = F, col.names = F, sep="\t", quote=F, append = T)
 p1=ggplot(pancanAtlas_iCluster_ATAC1, aes(x=x, y=y)) + geom_point(alpha=0.7,size=0.1, color="grey")
 p1=p1+geom_point(data=pancanAtlas_iCluster_ATAC2, aes(x=x, y=y, color=Type2),size=2)
 p1=p1+theme_classic()+scale_color_manual(values=c("grey", "#EA3323", "#0000F5"))
 p1=p1+theme(axis.line=element_blank(), axis.ticks = element_blank(), axis.text = element_blank(), axis.title = element_blank())
 p1=p1+theme(legend.position = "none")
-png("Figure8FHIJ_S5E/Figure8F.png", res=300, width=2200, height=1800)
+png("Figure8FHIJ_S7C/Figure8F.png", res=300, width=2200, height=1800)
 print(p1)
 dev.off()
 
@@ -3731,14 +4438,14 @@ p1=p1+scale_color_gradientn(name="delta accessiblity\n(ESCC only PMDs \nV.S. EAC
                             colours = c("red", "white", "#AC82FF", "blue"))
 p1=p1+theme(axis.line=element_blank(), axis.ticks = element_blank(), axis.text = element_blank(), axis.title = element_blank())
 p2=p1+theme(legend.position = "none")
-png("Figure8FHIJ_S5E/Figure8G.png", res=300, width=2200, height=1800)
+png("Figure8FHIJ_S7C/Figure8G.png", res=300, width=2200, height=1800)
 print(p2)
 dev.off()
-pdf("Figure8FHIJ_S5E/Figure8G_withlegend.pdf", width=8, height=8)
+pdf("Figure8FHIJ_S7C/Figure8G_withlegend.pdf", width=8, height=8)
 print(p1)
 dev.off()
 
-#####FigureS5E
+#####FigureS7C
 p1=ggplot(pancanAtlas_iCluster_ATAC1, aes(x=x, y=y)) + geom_point(alpha=0.7,size=0.1, color="grey")
 p1=p1+geom_point(data=pancanAtlas_iCluster_ATAC3, aes(x=x, y=y, color=delta_sharedHMD_PMD),size=2)
 p1=p1+theme_classic()
@@ -3746,10 +4453,10 @@ p1=p1+scale_color_gradientn(name="delta accessiblity\n(shared HMDs \nV.S. shared
                             colours = c("red", "white", "#AC82FF", "blue"))
 p1=p1+theme(axis.line=element_blank(), axis.ticks = element_blank(), axis.text = element_blank(), axis.title = element_blank())
 p2=p1+theme(legend.position = "none")
-png("Figure8FHIJ_S5E/FigureS5E.png", res=300, width=2200, height=1800)
+png("Figure8FHIJ_S7C/FigureS7C.png", res=300, width=2200, height=1800)
 print(p2)
 dev.off()
-pdf("Figure8FHIJ_S5E/FigureS5E_withlegend.pdf", width=8, height=8)
+pdf("Figure8FHIJ_S7C/FigureS7C_withlegend.pdf", width=8, height=8)
 print(p1)
 dev.off()
 
@@ -3806,14 +4513,14 @@ medianData=data.frame(cancerType=unique(plotdata$cancerType), median=unique(medi
 medianData=medianData[order(medianData$median),]
 plotdata$cancerType=factor(plotdata$cancerType, levels=as.character(medianData$cancerType))
 plotdata$label=factor(plotdata$label, levels=c("Pan-Squamous","Others","Pan-GI"))
-plotTumorATACPointPlot(plotdata, "Detal accessibility (ESCC only PMDs V.S. EAC only PMDs)", "Figure8FHIJ_S5E/Figure8I.pdf")
+plotTumorATACPointPlot(plotdata, "Detal accessibility (ESCC only PMDs V.S. EAC only PMDs)", "Figure8FHIJ_S7C/Figure8I.pdf")
 
 ######Figure8H
-cancerTypeInfo=read.table("Data/Figure8FHIJ_S5E/CancerType_info2.txt", header=T, sep="\t", stringsAsFactors = F, comment.char = "@")
-domainResultFile="Data/Figure8FHIJ_S5E/ATAC_domain_result.txt"
+cancerTypeInfo=read.table("Data/Figure8FHIJ_S7C/CancerType_info2.txt", header=T, sep="\t", stringsAsFactors = F, comment.char = "@")
+domainResultFile="Data/Figure8FHIJ_S7C/ATAC_domain_result.txt"
 domainResult=read.table(domainResultFile, sep="\t", stringsAsFactors = F, header=T)
 
-DMRResultFile="Data/Figure8FHIJ_S5E/ATAC_hypoDMR_result.txt"
+DMRResultFile="Data/Figure8FHIJ_S7C/ATAC_hypoDMR_result.txt"
 DMRResult=read.table(DMRResultFile, sep="\t", stringsAsFactors = F, header=T)
 DMRResult[grep("Basal|LumA|LumB|Her2", DMRResult$cancerType),]$cancerType="BRCA"
 
@@ -3843,8 +4550,8 @@ pancanAtlas_iCluster_ATAC2[pancanAtlas_iCluster_ATAC2$cancerType%in%c("EAC", "CO
 pancanAtlas_iCluster_ATAC3=pancanAtlas_iCluster_ATAC2
 pancanAtlas_iCluster_ATAC3[pancanAtlas_iCluster_ATAC3$delta>7,]$delta=7
 pancanAtlas_iCluster_ATAC3[pancanAtlas_iCluster_ATAC3$delta<(-7),]$delta=(-7)
-write.table(pancanAtlas_iCluster_ATAC1, "Figure8FHIJ_S5E/Figure8H.data.txt", row.names = F, col.names = T, sep="\t", quote=F)
-write.table(pancanAtlas_iCluster_ATAC2, "Figure8FHIJ_S5E/Figure8H.data.txt", row.names = F, col.names = F, sep="\t", quote=F, append = T)
+write.table(pancanAtlas_iCluster_ATAC1, "Figure8FHIJ_S7C/Figure8H.data.txt", row.names = F, col.names = T, sep="\t", quote=F)
+write.table(pancanAtlas_iCluster_ATAC2, "Figure8FHIJ_S7C/Figure8H.data.txt", row.names = F, col.names = F, sep="\t", quote=F, append = T)
 p1=ggplot(pancanAtlas_iCluster_ATAC1, aes(x=x, y=y)) + geom_point(alpha=0.7,size=0.1, color="grey")
 p1=p1+geom_point(data=pancanAtlas_iCluster_ATAC3, aes(x=x, y=y, color=delta),size=2)
 p1=p1+theme_classic()
@@ -3852,10 +4559,10 @@ p1=p1+scale_color_gradient2(name="delta accessiblity\n(ESCC tumor hypoDMRs \nV.S
                             low ="blue", mid = "white", high ="red", guide = "colourbar",midpoint = 0)
 p1=p1+theme(axis.line=element_blank(), axis.ticks = element_blank(), axis.text = element_blank(), axis.title = element_blank())
 p2=p1+theme(legend.position = "none")
-png("Figure8FHIJ_S5E/Figure8H.png", res=300, width=2200, height=1800)
+png("Figure8FHIJ_S7C/Figure8H.png", res=300, width=2200, height=1800)
 print(p2)
 dev.off()
-pdf("Figure8FHIJ_S5E/Figure8H.withlegend.pdf", width=8, height=7)
+pdf("Figure8FHIJ_S7C/Figure8H.withlegend.pdf", width=8, height=7)
 print(p1)
 dev.off()
 
@@ -3869,11 +4576,11 @@ medianData=data.frame(cancerType=unique(plotdata$cancerType), median=unique(medi
 medianData=medianData[order(medianData$median,decreasing = T),]
 plotdata$cancerType=factor(plotdata$cancerType, levels=as.character(medianData$cancerType))
 plotdata$label=factor(plotdata$label, levels=c("Pan-Squamous","Others","Pan-GI"))
-plotTumorATACPointPlot(plotdata, "Detal accessibility (ESCC tumor hypoDMRs V.S. EAC/GEJ tumor hypoDMRs)", "Figure8FHIJ_S5E/Figure8J.pdf")
+plotTumorATACPointPlot(plotdata, "Detal accessibility (ESCC tumor hypoDMRs V.S. EAC/GEJ tumor hypoDMRs)", "Figure8FHIJ_S7C/Figure8J.pdf")
 
-##############################################Figure8K and 8L##############################################
-#######Figure8K
-load("Data/Figure8K/GSE72874_HM450k.RData")
+##############################################FigureS7D and S7E##############################################
+#######FigureS7D
+load("Data/FigureS7D/GSE72874_HM450k.RData")
 normal_samples=sampleInfo[sampleInfo$Type%in%"Normal",]
 GERD_samples=sampleInfo[sampleInfo$Type%in%"GERD",]
 BE_samples=sampleInfo[sampleInfo$Type%in%"BE",]
@@ -3915,10 +4622,10 @@ plotHM450kDMRMethylationLinePlot=function(probesFile, methylationMatrix, sampleI
 
 GSE72874_PMD_methylation=plotHM450kPMDMethylationLinePlot("meta/HT450k.probe.rmCGI.rmblackList.solo.bed", methylationMatrix, targetSamples)
 GSE72874_PMD_methylation$Source="GSE72874"
-write.table(GSE72874_PMD_methylation, "Figure8K/Figure8K.PMD.txt", row.names = F, col.names = T, sep="\t", quote=F)
+write.table(GSE72874_PMD_methylation, "FigureS7D/FigureS7D.PMD.txt", row.names = F, col.names = T, sep="\t", quote=F)
 GSE72874_DMR_methylation=plotHM450kDMRMethylationLinePlot("meta/HT450k.probe.rmblackList.bed", methylationMatrix, targetSamples)
 GSE72874_DMR_methylation$Source="GSE72874" 
-write.table(GSE72874_DMR_methylation, "Figure8K/Figure8K.DMR.txt", row.names = F, col.names = T, sep="\t", quote=F)
+write.table(GSE72874_DMR_methylation, "FigureS7D/FigureS7D.DMR.txt", row.names = F, col.names = T, sep="\t", quote=F)
 
 plotPMDMethylationHeatmapAndLinePlot=function(plotdata, targetTypes, saveFile, height, width){
   my_theme=theme_classic()+ theme(plot.title = element_text(hjust = 0.5, size=14, color="black", face="bold"),
@@ -3975,7 +4682,7 @@ plotPMDMethylationHeatmapAndLinePlot=function(plotdata, targetTypes, saveFile, h
   print(ggarrange(plotlist = plotList))
   dev.off()
 }
-plotPMDMethylationHeatmapAndLinePlot(GSE72874_PMD_methylation, c("BE", "Tumour"), "Figure8K/Figure8K_PMD_heatmapLine.pdf", 5,10)
+plotPMDMethylationHeatmapAndLinePlot(GSE72874_PMD_methylation, c("BE", "Tumour"), "FigureS7D/FigureS7D_PMD_heatmapLine.pdf", 5,10)
 
 plotDMRMethylationHeatmapAndLinePlot=function(plotdata, targetTypes, saveFile, height, width){
   my_theme=theme_classic()+ theme(plot.title = element_text(hjust = 0.5, size=14, color="black", face="bold"),
@@ -4032,10 +4739,10 @@ plotDMRMethylationHeatmapAndLinePlot=function(plotdata, targetTypes, saveFile, h
   print(ggarrange(plotlist = plotList))
   dev.off()
 }
-plotDMRMethylationHeatmapAndLinePlot(GSE72874_DMR_methylation, c("BE", "Tumour"), "Figure8K/Figure8K_DMR_heatmapLine.pdf", 5,10)
+plotDMRMethylationHeatmapAndLinePlot(GSE72874_DMR_methylation, c("BE", "Tumour"), "FigureS7D/Figure8K_DMR_heatmapLine.pdf", 5,10)
 
-#######Figure8L
-load("Data/Figure8L/GSE81334_HM450k.RData")
+#######Figure S7E
+load("Data/FigureS7E/GSE81334_HM450k.RData")
 normal_samples=sampleInfo[sampleInfo$Type%in%"squamous",]
 BE_samples=sampleInfo[sampleInfo$Type%in%c("BE", "EAC.BE"),]
 EAC_samples=sampleInfo[sampleInfo$Type%in%"EAC",]
@@ -4044,10 +4751,99 @@ HM450k=read_bed("meta/HT450k.probe.bed",n_fields = 4)
 GSE81334_PMD_methylation=plotHM450kPMDMethylationLinePlot("meta/HT450k.probe.rmCGI.rmblackList.solo.bed", methyMatrix, targetSamples)
 GSE81334_PMD_methylation$Source="GSE81334"
 GSE81334_PMD_methylation[GSE81334_PMD_methylation$Type%in%"EAC.BE",]$Type="BE"
-write.table(GSE81334_PMD_methylation, "Figure8L/Figure8L.PMD.txt", row.names = F, col.names = T, sep="\t", quote=F)
+write.table(GSE81334_PMD_methylation, "FigureS7E/FigureS7E.PMD.txt", row.names = F, col.names = T, sep="\t", quote=F)
 GSE81334_DMR_methylation=plotHM450kDMRMethylationLinePlot("meta/HT450k.probe.rmblackList.bed", methyMatrix, targetSamples)
 GSE81334_DMR_methylation$Source="GSE81334" 
 GSE81334_DMR_methylation[GSE81334_DMR_methylation$Type%in%"EAC.BE",]$Type="BE"
-write.table(GSE81334_DMR_methylation, "Figure8L/Figure8L.DMR.txt", row.names = F, col.names = T, sep="\t", quote=F)
-plotPMDMethylationHeatmapAndLinePlot(GSE81334_PMD_methylation, c("BE", "EAC"), "Figure8L/Figure8L_PMD_heatmapLine.pdf", 5,10)
-plotDMRMethylationHeatmapAndLinePlot(GSE81334_DMR_methylation, c("BE", "EAC"), "Figure8L/Figure8L_DMR_heatmapLine.pdf", 5,10)
+write.table(GSE81334_DMR_methylation, "FigureS7E/FigureS7E.DMR.txt", row.names = F, col.names = T, sep="\t", quote=F)
+plotPMDMethylationHeatmapAndLinePlot(GSE81334_PMD_methylation, c("BE", "EAC"), "FigureS7E/FigureS7E_PMD_heatmapLine.pdf", 5,10)
+plotDMRMethylationHeatmapAndLinePlot(GSE81334_DMR_methylation, c("BE", "EAC"), "FigureS7E/FigureS7E_DMR_heatmapLine.pdf", 5,10)
+
+
+##############################################Figure8KLM_S7F##############################################
+load("Data/Figure8KLM_S7F//TCGA_methylation.full.Rdata")
+tumorResultMatrix2$Label="Other cancers"
+tumorResultMatrix2[tumorResultMatrix2$cancerType%in%c("ESCC", "HNSC", "LUSC", "CESC (Sq)", "BLCA (Ba/Sq)"),]$Label="Squamous cancers"
+tumorResultMatrix2[tumorResultMatrix2$cancerType%in%c("EAC", "COAD", "STAD", "READ"),]$Label="GI cancers"
+tumorResultMatrix2$Label=factor(tumorResultMatrix2$Label, levels=c("GI cancers", "Other cancers", "Squamous cancers"))
+PMD_tumorResultMatrix=tumorResultMatrix2[,c(1:3,7,6,9)]
+
+load("Data/Figure8KLM_S7F//TCGA_methylation_AllDMR.all.Rdata")
+tumorResultMatrix2$Label="Other cancers"
+tumorResultMatrix2[tumorResultMatrix2$cancerType%in%c("ESCC", "HNSC", "LUSC", "CESC (Sq)", "BLCA (Ba/Sq)"),]$Label="Squamous cancers"
+tumorResultMatrix2[tumorResultMatrix2$cancerType%in%c("EAC", "COAD", "STAD", "READ"),]$Label="GI cancers"
+tumorResultMatrix2$Label=factor(tumorResultMatrix2$Label, levels=c("GI cancers", "Other cancers", "Squamous cancers"))
+DMR_tumorResultMatrix=tumorResultMatrix2[,c(1:3,6,4,5)]
+
+plotdata=merge(PMD_tumorResultMatrix, DMR_tumorResultMatrix, by=c("SampleName", "cancerType", "Label"))
+save(plotdata, file="Figure8KLM_S7F/TCGA_specific_PMDsDMRs_forPredict.v2.RData")
+
+library(pROC)
+library(ROCR)
+library(multiROC)
+load("Figure8KLM_S7F/TCGA_specific_PMDsDMRs_forPredict.v2.RData")
+predictData=plotdata[,c(3:9)]
+rownames(predictData)=plotdata$SampleName
+predictData$Label=factor(predictData$Label, levels=c("Other cancers", "Squamous cancers", "GI cancers"))
+
+calculateMultiROC_change=function(predictData, saveIndex, features){
+  # myMultiPredict_round_list=list()
+  # for(i in 1:100){
+  #   print(paste0("Round", i))
+  #   myMultiPredict_round_list[[i]]=myMultiPredict(predictData, features, paste0(gsub(basename(saveIndex), "", saveIndex), "/Temp/", basename(saveIndex), "_downsampling.round", i, ".RData"))
+  # }
+  # save(myMultiPredict_round_list, file=paste0(saveIndex, "_downsampling_result.RData"))
+  load(paste0(saveIndex, "_downsampling_result.RData"))
+  for(i in 1:100){
+    tmp=myMultiPredict_round_list[[i]]
+    rownames(tmp)=paste0(rownames(tmp), "_", i)
+    if(i==1){
+      my_prediction=tmp
+    }else{
+      my_prediction=rbind(my_prediction, tmp)
+    }
+  }
+  
+  AUC_list=list()
+  res <- multi_roc(my_prediction, force_diag=T)
+  plot_roc_df <- plot_roc_data(res)
+  plot_roc_df=plot_roc_df[plot_roc_df$Group%in%c("Squamous", "GI", "Other"),]
+  plot_roc_df$Group=factor(plot_roc_df$Group, levels=c("Other", "Squamous", "GI"))
+  p=ggplot(plot_roc_df, aes(x = 1-Specificity, y=Sensitivity)) +
+    geom_path(aes(color = Group), size=1) +
+    geom_segment(aes(x = 0, y = 0, xend = 1, yend = 1), colour='grey', linetype = 'dotdash') +
+    scale_color_manual(values=c("darkgrey", "red", "blue"))+
+    theme_classic()+theme(panel.border = element_rect(colour = "black", fill = NA, size = 1),
+                          axis.ticks.length = unit(.18, "cm"), 
+                          axis.ticks = element_line(colour = "black"),
+                          plot.title = element_text(hjust = 0.5), 
+                          legend.position = "none")
+  
+  png(paste0(saveIndex, "_combined.png"), width=1200, height=1000, res = 300)
+  print(p)
+  dev.off()
+  AUC_list[["roc"]]=res$AUC
+  
+  pr_res <- multi_pr(my_prediction, force_diag=T)
+  plot_pr_df <- plot_pr_data(pr_res)
+  plot_pr_df=plot_pr_df[plot_pr_df$Group%in%c("Squamous", "GI", "Other"),]
+  plot_pr_df$Group=factor(plot_pr_df$Group, levels=c("Other", "Squamous", "GI"))
+  
+  p1=ggplot(plot_pr_df, aes(x=Recall, y=Precision)) + 
+    geom_path(aes(color = Group), size=1) +
+    geom_segment(aes(x = 0, y = 1, xend = 1, yend = 0), colour='grey', linetype = 'dotdash') +
+    theme_classic()+theme(panel.border = element_rect(colour = "black", fill = NA, size = 1),
+                          axis.ticks.length = unit(.18, "cm"), 
+                          axis.ticks = element_line(colour = "black"),
+                          plot.title = element_text(hjust = 0.5), 
+                          legend.position = "none")+ 
+    scale_color_manual(values=c("darkgrey", "red", "blue"))
+  png(paste0(saveIndex, "_combined.PR.png"), width=1200, height=1000, res = 300)
+  print(p1)
+  dev.off()
+  AUC_list[["pr"]]=pr_res$AUC
+  return(AUC_list)
+}
+allList=calculateMultiROC_change(predictData, "Figure8KLM_S7F/ROC-multiLogic_PMDDMR", c("ESCC_specificPMDs", "EAC_specificPMDs", "ESCC_DMRs", "EAC_DMRs"))
+PMDList=calculateMultiROC_change(predictData, "Figure8KLM_S7F/ROC-multiLogic_PMD", c("ESCC_specificPMDs", "EAC_specificPMDs"))
+DMRList=calculateMultiROC_change(predictData, "Figure8KLM_S7F/ROC-multiLogic_DMR", c("ESCC_DMRs", "EAC_DMRs"))

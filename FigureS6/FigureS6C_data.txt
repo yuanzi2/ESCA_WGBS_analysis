@@ -1,0 +1,11 @@
+Type	Sample	Ratio
+exon	tshyperEAC	0.0826446280991736
+Intergenic	tshyperEAC	0.115702479338843
+intron	tshyperEAC	0.752066115702479
+non-coding	tshyperEAC	0
+promoter-TSS	tshyperEAC	0.0495867768595041
+exon	tshyperESCC	0.0677966101694915
+Intergenic	tshyperESCC	0.254237288135593
+intron	tshyperESCC	0.638418079096045
+non-coding	tshyperESCC	0
+promoter-TSS	tshyperESCC	0.0395480225988701
